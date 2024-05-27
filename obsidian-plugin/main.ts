@@ -1,78 +1,125 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { createSmartAccount, generatePK } from 'author';
+import { EthService, IEthService } from 'eth_service';
+import { InvitationModal } from 'invitation.modal';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, SuggestModal } from 'obsidian';
+import { contractExists, createPodContract, getPodCid, insertConfig, inviteToPod, listenToInvites, readPodContractPermissions, updateConfig } from 'pod';
+import { DotSpinner } from 'spinner.service';
 
 // Remember to rename these classes and interfaces!
 
-interface MyPluginSettings {
-	mySetting: string;
+interface SMACCSettings {
+	author_pk: string;
+	msca: string
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+const DEFAULT_SETTINGS: SMACCSettings = {
+	author_pk: '',
+	msca: '',
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class SMACC extends Plugin {
+	settings: SMACCSettings;
+	settingTab: SettingTab;
+	ethService: IEthService;
+
+	async newAuthor() {
+		this.settings = DEFAULT_SETTINGS;
+		this.settings.author_pk = generatePK();
+		console.log(this.settings.author_pk);
+		this.ethService.updateSigner(this.settings.author_pk);
+		this.saveSettings();
+		this.settingTab.display();
+		this.settings.msca = await createSmartAccount(this.ethService);
+		// this.saveSettings();
+	}
+
+	async initAuthor() {
+		if (this.settings.author_pk == "") {
+			this.settings.author_pk = generatePK();
+			this.settingTab.display();
+		}
+
+		this.ethService = new EthService(this.settings.author_pk);
+		
+		if (this.settings.msca == "") {
+			this.settings.msca = await createSmartAccount(this.ethService);
+			this.settingTab.display();
+		}
+
+		this.saveSettings();
+	}
+
+	async newPod(path: string) {
+		if (await contractExists(this.app, path)) return;
+		const cid = getPodCid(path);
+		// check if cid differs from on chain state
+		await insertConfig(this.app, path, cid);
+		const spinner = new DotSpinner(this.app, path);
+		const pod_addr = await createPodContract(this.ethService, cid);
+		console.log(`new pod for folder ${path} created at: ${pod_addr}`);
+		const { readers, authors } = await readPodContractPermissions(this.ethService, pod_addr);
+		spinner.stop()
+		await updateConfig(this.app, path, pod_addr, readers, authors );
+	}
+
+	async updatePod(path: string) {
+		if (await contractExists(this.app, path)) return;
+		// const cid = getNewCid(path);
+	}
 
 	async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
+		this.initAuthor();
+		listenToInvites(this.ethService)
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
+		this.registerEvent(
+			this.app.workspace.on("file-menu", (menu, file: any) => {
 
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
+				console.log(file);
 
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
+				if (file.children.length > 0) {
+
+					menu.addItem((item) => {
+						item
+						.setTitle("Create pod")
+						.setIcon("document")
+						.onClick(() => { 
+							this.newPod(file.path)
+						})
+					});
+
+					menu.addItem((item) => {
+						item
+						.setTitle("Commit pod")
+						.setIcon("document")
+						.onClick(() => { 
+							this.updatePod(file.path)
+						})
+					});
+
+					menu.addItem((item) => {
+						item
+						.setTitle("Invite reader")
+						.setIcon("document")
+						.onClick(() => { 
+							new InvitationModal(this.app,this.ethService, file.path).open();
+						})
+					});
 				}
-			}
-		});
+			})
+		);
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		// const modal = new SuggestModal(this.app);
+			
+		// 	'Select an option', [
+		// 	{ value: 'option1', display: 'Option 1' },
+		// 	{ value: 'option2', display: 'Option 2' },
+		// 	{ value: 'option3', display: 'Option 3' }
+		// ]);
 
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
+		this.settingTab = new SettingTab(this.app, this);
+		this.addSettingTab(this.settingTab);
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
@@ -86,31 +133,21 @@ export default class MyPlugin extends Plugin {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
 
+	async clearSettings() {
+		await this.saveData(DEFAULT_SETTINGS);
+	}
+
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
 
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
 
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
+class SettingTab extends PluginSettingTab {
+	plugin: SMACC;
 
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: SMACC) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -121,14 +158,31 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+		.setName('Author')
+		.setDesc('Delete below, create a new local signer and on-chain smart account')
+		.addButton( button => button
+			.setButtonText("New")
+			.onClick( async () => {
+				await this.plugin.newAuthor();
+			})
+		);
+
+		new Setting(containerEl)
+			.setName('Signer key')
+			.setDesc('Locally kept private key for an eoa')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
+				.setValue(this.plugin.settings.author_pk)
+				// .onChange(async (value) => {
+				// 	this.plugin.settings.author_pk = value;
+				// 	await this.plugin.saveSettings();
+				// })
+			);
+
+		new Setting(containerEl)
+		.setName('Smart Account')
+		.setDesc('Modular Smart Account following EIP-4337 on Arbitrum Sepolia')
+		.addText(text => text
+			.setValue(this.plugin.settings.msca)
+		);
 	}
 }
