@@ -1,9 +1,9 @@
 {
-	"id": "smart-account",
-	"name": "Smart Account",
+	"id": "whatsupdoc",
+	"name": "Whats up doc",
 	"version": "0.0.1",
 	"minAppVersion": "0.15.0",
-	"description": "will perform ethereum userOperations",
+	"description": "simple collaboration over a folder in your vault using ipfs and blockchain",
 	"author": "Obsidian",
 	"authorUrl": "https://obsidian.md",
 	"fundingUrl": "https://obsidian.md/pricing",
