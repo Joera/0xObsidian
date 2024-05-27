@@ -1,9 +1,11 @@
 import { createSmartAccount, generatePK } from 'author';
 import { EthService, IEthService } from 'eth_service';
 import { InvitationModal } from 'invitation.modal';
+import { IIpfsService, IpfsService } from 'ipfs.service';
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, SuggestModal } from 'obsidian';
 import { contractExists, createPodContract, getPodCid, insertConfig, inviteToPod, listenToInvites, readPodContractPermissions, updateConfig } from 'pod';
 import { DotSpinner } from 'spinner.service';
+import { info, upload } from './lighthouse.service';
 
 // Remember to rename these classes and interfaces!
 
@@ -21,6 +23,7 @@ export default class SMACC extends Plugin {
 	settings: SMACCSettings;
 	settingTab: SettingTab;
 	ethService: IEthService;
+	ipfsService: IIpfsService;
 
 	async newAuthor() {
 		this.settings = DEFAULT_SETTINGS;
@@ -67,9 +70,18 @@ export default class SMACC extends Plugin {
 		// const cid = getNewCid(path);
 	}
 
+	async initIpfs() {
+
+		// how to 
+		await upload("/home/joera/vaults/main/pod_hackfs");
+
+		}
+
 	async onload() {
 		await this.loadSettings();
 
+
+		await this.initIpfs();
 		this.initAuthor();
 		listenToInvites(this.ethService)
 
