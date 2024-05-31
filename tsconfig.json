@@ -4,13 +4,14 @@
     "inlineSourceMap": true,
     "inlineSources": true,
     "module": "ESNext",
-    "target": "ESNext",
+    "target": "ES2018",
     "allowJs": true,
     "noImplicitAny": true,
     "moduleResolution": "node",
     "importHelpers": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
 	"strictNullChecks": true,
     "lib": [
       "DOM",
@@ -20,6 +21,6 @@
     ]
   },
   "include": [
-    "**/*.js"
+    "**/*.ts"
   ]
 }

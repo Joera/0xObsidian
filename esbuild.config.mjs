@@ -18,6 +18,7 @@ const context = await esbuild.context({
 	entryPoints: ["main.ts"],
 	bundle: true,
 	external: [
+		"hardhat",
 		"obsidian",
 		"electron",
 		"@codemirror/autocomplete",
@@ -37,7 +38,7 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
-	outfile: "main.js",
+	outfile: "main.js"
 });
 
 if (prod) {

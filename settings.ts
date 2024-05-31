@@ -21,7 +21,7 @@ export default class WUDSettingTab extends PluginSettingTab {
 		.addButton( button => button
 			.setButtonText("New")
 			.onClick( async () => {
-				await this.plugin.newAuthor();
+				await this.plugin.ctrlr.newAuthor();
 			})
 		);
 
@@ -30,10 +30,10 @@ export default class WUDSettingTab extends PluginSettingTab {
 			.setDesc('Locally kept private key for an eoa')
 			.addText(text => text
 				.setValue(this.plugin.settings.author_pk)
-				// .onChange(async (value) => {
-				// 	this.plugin.settings.author_pk = value;
-				// 	await this.plugin.saveSettings();
-				// })
+				.onChange(async (value) => {
+					this.plugin.settings.author_pk = value;
+					await this.plugin.saveSettings();
+				})
 			);
 
 		new Setting(containerEl)
@@ -41,6 +41,21 @@ export default class WUDSettingTab extends PluginSettingTab {
 		.setDesc('Modular Smart Account following EIP-4337 on Arbitrum Sepolia')
 		.addText(text => text
 			.setValue(this.plugin.settings.msca)
+			.onChange(async (value) => {
+				this.plugin.settings.msca = value;
+				await this.plugin.saveSettings();
+			})
+		);
+
+		new Setting(containerEl)
+		.setName('Name')
+		.setDesc('ENS name for the Modular Smart Account')
+		.addText(text => text
+			.setValue(this.plugin.settings.ens_name)
+			.onChange(async (value) => {
+				this.plugin.settings.ens_name = value;
+				await this.plugin.saveSettings();
+			})
 		);
 	}
 }

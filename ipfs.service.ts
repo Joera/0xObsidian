@@ -14,7 +14,7 @@ export interface IIpfsService {
 
     init: () => void
     add: () => Promise<string>
-    retrieve: (string) => void
+    retrieve: (cid: string) => void
 }
 
 export class IpfsService implements IIpfsService {

@@ -1,16 +1,17 @@
 import { IEthService } from "eth_service";
+import { IMainController } from "main.ctrlr";
 import { App, Modal } from "obsidian";
-import { inviteToPod } from "pod";
+// import { inviteToPod } from "pod";
 
 export class InvitationModal extends Modal {
 
 	path;
-    eth;
+    main;
 
-	constructor(app: App, ethService: IEthService, path: string) {
+	constructor(app: App, main: IMainController, path: string) {
 		super(app);
 		this.path = path;
-        this.eth = ethService;
+        this.main = main;
 	}
 
 	onOpen() {
@@ -31,7 +32,7 @@ export class InvitationModal extends Modal {
 
 		const button = contentEl.createEl('button', { text: 'Send' });
         button.addEventListener('click', () => {
-            inviteToPod(this.app, this.eth, this.path, invitee_input.value, readPermissions.checked, writePermissions.checked);
+            this.main.inviteToPod(this.path, invitee_input.value, readPermissions.checked, writePermissions.checked);
 			this.close()
         });
 	}

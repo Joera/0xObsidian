@@ -10,12 +10,7 @@ export const generatePK = () => {
     return w.privateKey;
 } 
 
-// export const myAddress = (pk: string) => {
-//     const w = new Wallet(pk);
-//     return w.address;
-// }
-
-export const createSmartAccount = async (ethService: IEthService): Promise<string> => {
+export const createSmartAccount = async (ethService: IEthService, token: string): Promise<string> => {
 
     return new Promise( async (resolve, reject) => {
 
@@ -26,22 +21,23 @@ export const createSmartAccount = async (ethService: IEthService): Promise<strin
 
         const callData = ethService.podFactory.interface.encodeFunctionData("test",[]);
         const target = POD_FACTORY_ADDRESS;
-        const userOp = await formatUserOp(ethService, msca, initCode, target, callData);
-
-        // console.log(userOp);
+        const userOp = await formatUserOp(ethService, msca, initCode, target, callData, token);
 
         const opHash = await sendUserOperation(
             userOp,
             ENTRYPOINT_ADDRESS,
+            token
         );
 
         const interval = setInterval(async () => {
             
             try {
                 
-                const { transactionHash } = await getUserOperationByHash([opHash])
+                const { transactionHash } = await getUserOperationByHash([opHash], token)
+                console.log(transactionHash);
                 
                 if(transactionHash != null) {
+
                     resolve(msca)
                     clearInterval(interval);
                 } 

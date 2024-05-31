@@ -14,18 +14,8 @@ exports.default = async (formData, boundary, accessToken, multi, dealParameters,
         
         const endpoint = lighthouse_config_1.lighthouseConfig.lighthouseNode +
             `/api/v0/add?wrap-with-directory=${multi}`;
-
-        // console.log(files);
-
-        // (0, util_1.checkDuplicateFileNames)(files);
-        // const formData = new form_data_1.default();
-        // const boundary = Symbol();
-        // for (let i = 0; i < files.length; i++) {
-        //     formData.append('file', files[i]);
-        // }
+            
         const token = 'Bearer ' + accessToken;
-
-        console.log(token);
 
         const response = await axios_1.default.post(endpoint, formData, {
             maxContentLength: Infinity,
@@ -47,7 +37,7 @@ exports.default = async (formData, boundary, accessToken, multi, dealParameters,
             //     }
             // },
         });
-        console.log(response);
+        // console.log(response);
         if (typeof response.data === 'string') {
             if (multi) {
                 response.data = JSON.parse(`[${response.data.slice(0, -1)}]`.split('\n').join(','));

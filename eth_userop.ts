@@ -1,5 +1,4 @@
 import { ACCOUNT_FACTORY_ADDRESS, ENTRYPOINT_ADDRESS, PAYMASTER_ADDRESS } from "eth_contracts";
-import { API_KEY } from "eth_env";
 import { IEthService } from "eth_service";
 import { ethers, Signer, Provider, Contract } from "ethers";
 
@@ -19,8 +18,6 @@ export const create_init_code = async (ethService: IEthService) => {
 
     const eoa = await ethService.signer.getAddress();
     const salt = eth_fixed_salt();
-
-    console.log(salt);
 
     let initCode =  
     ACCOUNT_FACTORY_ADDRESS + 
@@ -43,11 +40,11 @@ export const create_init_code = async (ethService: IEthService) => {
 
     return {
         initCode,
-        msca
+        msca: ethers.getAddress(msca)
     }
 }
 
-export const formatUserOp = async (ethService: IEthService, msca: string, initCode: string, target: string, callData: string) : Promise<any> => {
+export const formatUserOp = async (ethService: IEthService, msca: string, initCode: string, target: string, callData: string, token: string) : Promise<any> => {
 
     const callDataUserOp = ethService.smartAccount.interface.encodeFunctionData("execute",[target, zeroEth(), callData]);
 
@@ -60,10 +57,11 @@ export const formatUserOp = async (ethService: IEthService, msca: string, initCo
         signature: "0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c"
     }
 
-    const { preVerificationGas, verificationGasLimit, callGasLimit} =  await estimateUserOpGas(userOp, ENTRYPOINT_ADDRESS);
+
+    const { preVerificationGas, verificationGasLimit, callGasLimit} =  await estimateUserOpGas(userOp, ENTRYPOINT_ADDRESS, token);
 
     const { maxFeePerGas } = await ethService.provider.getFeeData();
-    const maxPriorityFeePerGas = await rundler_maxPriorityFeePerGas();
+    const maxPriorityFeePerGas = await rundler_maxPriorityFeePerGas(token);
 
     userOp.callGasLimit = callGasLimit;
     userOp.verificationGasLimit = verificationGasLimit;
@@ -79,7 +77,7 @@ export const formatUserOp = async (ethService: IEthService, msca: string, initCo
 }
 
 
-export const rundler_maxPriorityFeePerGas = async () : Promise<any> =>  {
+export const rundler_maxPriorityFeePerGas = async (token: string) : Promise<any> =>  {
 
     return new Promise( (resolve, reject) : any => {
     
@@ -93,7 +91,7 @@ export const rundler_maxPriorityFeePerGas = async () : Promise<any> =>  {
             })
         };
       
-        fetch(`https://arb-sepolia.g.alchemy.com/v2/${API_KEY}`, options)
+        fetch(`https://arb-sepolia.g.alchemy.com/v2/${token}`, options)
             .then(response => response.json())
             .then(response => resolve(response.result))
             .catch(err => {
@@ -104,7 +102,7 @@ export const rundler_maxPriorityFeePerGas = async () : Promise<any> =>  {
     });
 }
 
-export const estimateUserOpGas = async (userOp: any, contract_address: string) : Promise<any> =>  {
+export const estimateUserOpGas = async (userOp: any, contract_address: string, token: string) : Promise<any> =>  {
 
     return new Promise( (resolve, reject) : any => {
     
@@ -122,10 +120,9 @@ export const estimateUserOpGas = async (userOp: any, contract_address: string) :
             })
         };
       
-        fetch(`https://arb-sepolia.g.alchemy.com/v2/${API_KEY}`, options)
+        fetch(`https://arb-sepolia.g.alchemy.com/v2/${token}`, options)
             .then(response => response.json())
             .then(response => {
-                console.log(response);
                 resolve(response.result)
              })
             .catch(err => {
@@ -136,11 +133,11 @@ export const estimateUserOpGas = async (userOp: any, contract_address: string) :
     });
 }
 
-export const sendUserOperation = async (userOp: any, contract_address: string) : Promise<any> =>  {
+export const sendUserOperation = async (userOp: any, contract_address: string, token: string) : Promise<any> =>  {
 
     return new Promise( (resolve, reject) : any => {
 
-        console.log(userOp);
+        // console.log(userOp);
     
         const options = {
             method: 'POST',
@@ -156,7 +153,7 @@ export const sendUserOperation = async (userOp: any, contract_address: string) :
             })
         };
           
-        fetch(`https://arb-sepolia.g.alchemy.com/v2/${API_KEY}`, options)
+        fetch(`https://arb-sepolia.g.alchemy.com/v2/${token}`, options)
             .then(response => response.json())
             .then(response => {
                // "invalid 1st argument: userOperation invalid user operation fields"
@@ -167,7 +164,7 @@ export const sendUserOperation = async (userOp: any, contract_address: string) :
     });
 }
 
-export const getUserOperationByHash = async (ops: string[]) : Promise<any> =>  {
+export const getUserOperationByHash = async (ops: string[], token: string) : Promise<any> =>  {
 
     return new Promise( (resolve, reject) : any => {
 
@@ -182,7 +179,7 @@ export const getUserOperationByHash = async (ops: string[]) : Promise<any> =>  {
             })
           };
           
-        fetch(`https://arb-sepolia.g.alchemy.com/v2/${API_KEY}`, options)
+        fetch(`https://arb-sepolia.g.alchemy.com/v2/${token}`, options)
             .then(response => response.json())
             .then(response => {
                 // console.log(response);
