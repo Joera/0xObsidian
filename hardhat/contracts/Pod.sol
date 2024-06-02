@@ -73,6 +73,11 @@ contract Pod  {
 
 contract PodFactory {
 
+    // is being used as dummy call in contract creation!
+    function test() pure external returns (string memory) {
+
+        return "hello";
+    }
 
     function concatBytes16(address owner, string memory cid) public pure returns (bytes32 result) {
             bytes memory _cid = bytes(cid);

@@ -1,6 +1,6 @@
 {
 	"id": "whatsupdoc",
-	"name": "Whats up doc",
+	"name": "0xObsidian",
 	"version": "0.0.1",
 	"minAppVersion": "0.15.0",
 	"description": "simple collaboration over a folder in your vault using ipfs and blockchain",

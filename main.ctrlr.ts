@@ -62,16 +62,16 @@ export class MainController implements IMainController {
             this.plugin.settingTab.display();
         }
 
-        if (this.plugin.settings.msca != "") {
+        // if (this.plugin.settings.msca != "") {
 
-            // 0x4729d7061db66Bc8EDe9d7eB5c71c5fd0a47749c
-            const ensName = await this.eth.ensProvider.lookupAddress(await ethers.getAddress(this.plugin.settings.msca));
-            // console.log(ensName);
-            if (ensName != null) {
-                this.plugin.settings.ens_name = ensName;
-                this.plugin.settingTab.display();
-            }
-        }
+        //     // 0x4729d7061db66Bc8EDe9d7eB5c71c5fd0a47749c
+        //     const ensName = await this.eth.ensProvider.lookupAddress(await ethers.getAddress(this.plugin.settings.msca));
+        //     // console.log(ensName);
+        //     if (ensName != null) {
+        //         this.plugin.settings.ens_name = ensName;
+        //         this.plugin.settingTab.display();
+        //     }
+        // }
 
     }
 
@@ -85,6 +85,7 @@ export class MainController implements IMainController {
         const msca = await createSmartAccount(this.eth, this.env.SEPOLIA_API_KEY || 'x');
         console.log(msca);
         this.plugin.settings.msca = msca;
+        this.plugin.settingTab.display();
         this.plugin.saveSettings();
     }
 

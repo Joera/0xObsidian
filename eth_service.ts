@@ -157,7 +157,7 @@ export class EthService implements IEthService {
             const pod = ethers.getAddress('0x' + topics[1].slice(26));
             const from = ethers.getAddress('0x' + topics[2].slice(26));
             const to = ethers.getAddress('0x' + topics[3].slice(26));
-            
+
             if(to == ethers.getAddress(this.main.plugin.settings.msca)){
 
             //    const ensName = await this.ensProvider.lookupAddress(to);
@@ -183,7 +183,7 @@ export class EthService implements IEthService {
 
         console.log("listening to updates");
 
-        this.provider.on(filter, (log) => {
+        this.provider.on(filter, async (log) => {
 
             const { topics, data } = log;
 
@@ -191,7 +191,18 @@ export class EthService implements IEthService {
             const from = ethers.getAddress('0x' + topics[2].slice(26));
             const cid = topics[3];
 
-            if(from != ethers.getAddress(this.main.plugin.settings.msca)){
+            const readers: string[] = await this.main.eth.podContract.getReaders();
+            const msca = this.main.plugin.settings.msca;
+
+            console.log(readers);
+            console.log(ethers.getAddress(msca))
+
+            if(
+                from != ethers.getAddress(msca)
+                &&
+                readers.indexOf(ethers.getAddress(msca)) > -1
+            
+            ){
                 const modal = new UpdateAcceptModal(this.main, from, pod).open();
             } else {
                 console.log("ignored update");

@@ -43,19 +43,20 @@ export default class WUDSettingTab extends PluginSettingTab {
 			.setValue(this.plugin.settings.msca)
 			.onChange(async (value) => {
 				this.plugin.settings.msca = value;
+				console.log(value);
 				await this.plugin.saveSettings();
 			})
 		);
 
-		new Setting(containerEl)
-		.setName('Name')
-		.setDesc('ENS name for the Modular Smart Account')
-		.addText(text => text
-			.setValue(this.plugin.settings.ens_name)
-			.onChange(async (value) => {
-				this.plugin.settings.ens_name = value;
-				await this.plugin.saveSettings();
-			})
-		);
+		// new Setting(containerEl)
+		// .setName('Name')
+		// .setDesc('ENS name for the Modular Smart Account')
+		// .addText(text => text
+		// 	.setValue(this.plugin.settings.ens_name)
+		// 	.onChange(async (value) => {
+		// 		this.plugin.settings.ens_name = value;
+		// 		await this.plugin.saveSettings();
+		// 	})
+		// );
 	}
 }
