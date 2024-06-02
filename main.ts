@@ -3,7 +3,6 @@ import { InvitationModal } from 'invitation.modal';
 import { Plugin, SettingTab } from 'obsidian';
 import WUDSettingTab from './settings'
 import { IMainController, MainController } from 'main.ctrlr';
-import { fetchDir } from 'remotekubo.service';
 
 interface SMACCSettings {
 	author_pk: string;
@@ -29,7 +28,7 @@ export default class SMACC extends Plugin {
 		this.registerEvent(
 			this.app.workspace.on("file-menu", (menu, file: any) => {
 
-				if (file.children.length > 0) {
+				if (file.children && file.children.length > 0) {
 
 					menu.addItem((item) => {
 						item
@@ -42,7 +41,7 @@ export default class SMACC extends Plugin {
 
 					menu.addItem((item) => {
 						item
-						.setTitle("Commit pod")
+						.setTitle("Update pod")
 						.setIcon("document")
 						.onClick(() => { 
 							this.ctrlr.updatePod(file.path)

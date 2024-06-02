@@ -8,16 +8,18 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 
 contract Pod  {
     string public cid;
+    string public name;
     address[] public readers; 
     address[] public authors; 
 
     event PodInvite(address indexed pod, address indexed from, address indexed to);
     event PodUpdate(address indexed pod, address indexed from, string indexed cid);
 
-    constructor(address _initiator,string memory _cid) {
+    constructor(address _initiator, string memory _cid, string memory _name) {
         readers.push(_initiator);
         authors.push(_initiator);
         cid = _cid;
+        name = _name;
     }
 
      function _exists(address[] memory _array, address _address) public pure returns (bool) {
@@ -31,16 +33,24 @@ contract Pod  {
         return false;
     }
 
-    function inviteReader(address _reader) external {
+    function inviteReader(address _from, address _reader) external {
 
         if (!_exists(readers, _reader)) {
             readers.push(_reader);
         }
 
-        emit PodInvite(address(this), msg.sender, _reader);
+        emit PodInvite(address(this), _from, _reader);
     }
 
-    function inviteAuthor(address _author) external {
+    function getReaders() public view returns (address[] memory) {
+        return readers;
+    }
+
+    function getAuthors() public view returns (address[] memory) {
+        return authors;
+    }
+
+    function inviteAuthor(address _from, address _author) external {
 
         if (!_exists(readers, _author)) {
             readers.push(_author);
@@ -50,23 +60,18 @@ contract Pod  {
             authors.push(_author);
         }  
 
-        emit PodInvite(address(this), msg.sender, _author);
+        emit PodInvite(address(this), _from, _author);
     }
 
-    function update(string calldata _cid) external {
+    function update(address _from, string calldata _cid) external {
 
         cid = _cid;
 
-        emit PodUpdate(address(this), msg.sender, _cid);
+        emit PodUpdate(address(this), _from, _cid);
     }   
 } 
 
 contract PodFactory {
-
-    function test() pure external returns (string memory) {
-
-        return "hello";
-    }
 
 
     function concatBytes16(address owner, string memory cid) public pure returns (bytes32 result) {
@@ -81,10 +86,10 @@ contract PodFactory {
         }
     }
 
-    function createPod(address owner, string memory cid) external returns (address) {
+    function createPod(address owner, string memory cid, string memory name) external returns (address) {
 
-        bytes32 salt = concatBytes16(owner, cid);
-        bytes memory bytecode = abi.encodePacked(type(Pod).creationCode, abi.encode(owner, cid));
+        bytes32 salt = concatBytes16(owner, cid); // replace cid with name ? 
+        bytes memory bytecode = abi.encodePacked(type(Pod).creationCode, abi.encode(owner, cid, name));
 
         address addr = Create2.computeAddress(salt, keccak256(bytecode));
         uint256 codeSize = addr.code.length;

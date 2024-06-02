@@ -14,7 +14,7 @@ export const sendInvite = (ethService: IEthService, method: string, pod_address:
         await ethService.loadSmartAccount(msca);
         await ethService.loadPod(pod_address)
 
-        const callData = ethService.podContract.interface.encodeFunctionData(method,[invitee]);   
+        const callData = ethService.podContract.interface.encodeFunctionData(method,[msca, invitee]);   
         const target = pod_address;
         const userOp = await formatUserOp(ethService, msca, initCode, target, callData, token);
 

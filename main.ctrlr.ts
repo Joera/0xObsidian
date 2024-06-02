@@ -3,13 +3,14 @@ import { EthService, IEthService } from "eth_service";
 import SMACC from "main";
 import * as dotenv from 'dotenv'
 import { IPod, Pod } from "pod";
-import { download, upload } from "lighthouse.service";
 import { DotSpinner } from "spinner.service";
 import { Notice, TFile } from "obsidian";
 import { ethers } from "ethers";
 import { fetchDir, uploadDir } from "remotekubo.service";
 // import tar from 'tar';
 import { Tarball } from '@obsidize/tar-browserify'; 
+import { importAndMerge } from "import";
+import { ILitService, LitService } from "lit.service";
 
 const basePath = (app.vault.adapter as any).basePath
 
@@ -35,6 +36,7 @@ export class MainController implements IMainController {
     basePath: string
     plugin: SMACC
     eth: IEthService;
+    lit: ILitService;
     env: {[key: string]: string | undefined }
     pods: {[key: string]: IPod } = {}
 
@@ -53,6 +55,7 @@ export class MainController implements IMainController {
         }
     
         this.eth = new EthService(this);
+        this.lit = new LitService(this)
 
         if (this.plugin.settings.msca == "") {
             this.plugin.settings.msca = await createSmartAccount(this.eth, this.env.SEPOLIA_API_KEY || 'x');
@@ -70,35 +73,6 @@ export class MainController implements IMainController {
             }
         }
 
-        const tarPath = this.basePath + '/' + 'tmp.tar';
-
-        const cid = "QmRK9G5jrPoAR6bZwvuGU7VcBgoPHGAsdZKG1HvLEqaQyT";
-        const path = "hackfs"
-
-        const tarbytes = await fetchDir(cid);
-
-        const entries = Tarball.extract(tarbytes);
-
-        for (let entry of entries){
-            if (entry.fileName.endsWith(".md")){
-                await this.plugin.app.vault.create(entry.fileName, entry.getContentAsText());
-            } else {
-                await this.plugin.app.vault.createFolder(entry.fileName);
-            }
-        }
-        console.log('1')
-        const oldFolder = this.plugin.app.vault.getAbstractFileByPath(path);
-        if (oldFolder != null) {
-            await this.plugin.app.vault.trash(oldFolder, true);
-        }
-        console.log('2')
-        const tempFolder = this.plugin.app.vault.getAbstractFileByPath(cid);
-        if (tempFolder != null) {
-            await this.plugin.app.vault.rename(
-                tempFolder,
-                path
-            );
-        }
     }
 
     async newAuthor() {
@@ -116,22 +90,30 @@ export class MainController implements IMainController {
 
     async newPod(path: string) {
 
+        function generateRandomString(length: number ) {
+            return [...Array(length)].map(() => Math.random().toString(36)[2]).join('');
+        }
+
         let pod = this.pods[path] = new Pod(this, path);
         if (await pod.exists()) return;
-        await pod.initFile()
-        const cid = await upload(this.basePath + '/' + path, this.env.LIGHTHOUSE_TOKEN || 'x');
-        console.log(`cid: ${cid}`)
-        await pod.updateFrontMatter("cid", cid);
+        await pod.initFile();
         pod.displayFile()
         const spinner = new DotSpinner(this.plugin.app, path);
-        const pod_addr = await pod.deploy(cid);
-        await pod.updateFrontMatter("contract", pod_addr);
+
+        const pod_addr = await pod.deploy(generateRandomString(32), path);
+        spinner.stop();
         this.eth.loadPod(pod_addr);
+        await pod.updateFrontMatter("contract", pod_addr);
+        await this.lit.createAccessFile(path, pod_addr);
+        const cid = await uploadDir(this.basePath + '/' + path);
+        await pod.update(this.eth, pod_addr, cid);
+        await pod.updateFrontMatter("cid", cid);
         console.log(`new pod for folder ${path} created at: ${pod_addr}`);
         const { readers, authors } = await pod.permissions(this.eth, pod_addr);
         await pod.updateFrontMatter("readers", readers);
         await pod.updateFrontMatter("authors", authors);
-        spinner.stop()
+
+       
     }
     
     async updatePod(path: string) {
@@ -154,7 +136,6 @@ export class MainController implements IMainController {
         await pod.updateFrontMatter("readers", readers);
         await pod.updateFrontMatter("authors", authors);
    
-        // const newCid = await upload(this.basePath + '/' + path, this.env.LIGHTHOUSE_TOKEN || 'x');
         const newCid = await uploadDir(this.basePath + '/' + path);
         console.log(newCid);
         if (newCid != await pod.readFrontMatter("cid")) {
@@ -180,27 +161,36 @@ export class MainController implements IMainController {
             new Notice("no contract address specified in your pod config file");
             return;
         }
+
         this.eth.loadPod(pod_addr);
-
-        console.log(invitee);
-
         await pod.invite(pod_addr, invitee, read, write, this.env.SEPOLIA_API_KEY || "x");
-
         const { readers, authors } = await pod.permissions(this.eth, pod_addr);
         await pod.updateFrontMatter("readers", readers);
         await pod.updateFrontMatter("authors", authors);
     }
 
-    async import(contract: string) {
+    async import(pod_addr: string) {
 
-        // read cid, reader from contract
         const name = "hackfs"; // add to contract 
 
-        this.eth.loadPod(contract);
+        this.eth.loadPod(pod_addr);
         const cid = await this.eth.podContract.cid();
         const reader_0 = await this.eth.podContract.readers(0);
 
-        download(this, name, cid) 
+        await this.lit.readAccessFile(name);
+
+        let success = await importAndMerge(this, cid, name);
+
+        if (success) {
+            let pod = this.pods[name] = new Pod(this, name);
+            if (await pod.exists()) return;
+            await pod.initFile();
+            await pod.updateFrontMatter("cid", cid);
+            await pod.updateFrontMatter("contract", pod_addr);
+            const { readers, authors } = await pod.permissions(this.eth, pod_addr);
+            await pod.updateFrontMatter("readers", readers);
+            await pod.updateFrontMatter("authors", authors);
+        }
 
     }
 }

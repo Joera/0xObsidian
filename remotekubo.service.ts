@@ -64,11 +64,7 @@ export const fetchDir = async (cid: string) : Promise<Buffer> => {
         request.on('response', (response: any) => {
         
             response.on('data', (chunk: any) => {
-                console.log(chunk);
                 const nodeBuffer = Buffer.from(chunk);
-                // fs.writeFile(path, nodeBuffer, () => {
-                //     console.log(`File saved to ${path}`);
-                // });
                 resolve(nodeBuffer);
             });
         });

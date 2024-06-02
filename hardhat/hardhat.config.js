@@ -6,7 +6,7 @@ module.exports = {
   defaultNetwork: "arb",
   networks: {
     arb: {
-      url: process.env.RPC_URL,
+      url: process.env.SEPOLIA_RPC_URL,
       accounts: [process.env.PRIVATE_KEY]
     },
     ipc: {

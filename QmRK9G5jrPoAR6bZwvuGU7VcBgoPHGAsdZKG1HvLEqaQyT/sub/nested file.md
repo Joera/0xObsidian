@@ -1,2 +1,0 @@
-
-lorem ipsum, flipsum dipsum 

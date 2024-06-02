@@ -8,7 +8,7 @@ export class DotSpinner  {
 
     constructor(app: App, path: string) {
 
-        this.file = app.vault.getFileByPath(`${path}/pod.config.md`);
+        this.file = app.vault.getFileByPath(`${path}/_pod.md`);
         this.app = app;
         this.start();
     }
@@ -19,6 +19,7 @@ export class DotSpinner  {
 
         this.periodic = setInterval ( async () => {
             if (this.file != null) {
+                // console.log('spinna');
                 await this.app.fileManager.processFrontMatter( this.file, (frontmatter) => {
 
                     let v = '.';

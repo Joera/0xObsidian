@@ -12,7 +12,7 @@ export interface IPod {
     file: TFile | null
     initFile: () => Promise<void>
     displayFile: () => Promise<void> 
-    deploy: (cid: string) => Promise<string>
+    deploy: (cid: string, name: string) => Promise<string>
     update: (ethService: IEthService, pod_addr: string, cid: string) => Promise<void>
     updateFrontMatter: (key: string, value: string | string[]) => Promise<void>
     readFrontMatter: (key: string) => Promise<string>
@@ -76,7 +76,7 @@ export class Pod {
         }
     }
 
-    async deploy(cid: string) : Promise<string>  {
+    async deploy(cid: string, name : string) : Promise<string>  {
 
         return new Promise( async (resolve, reject) => {
 
@@ -87,7 +87,7 @@ export class Pod {
             const { initCode, msca } = await create_init_code(eth);
             this.main.eth.loadSmartAccount(msca);
 
-            const callData = eth.podFactory.interface.encodeFunctionData("createPod",[msca,cid]);   
+            const callData = eth.podFactory.interface.encodeFunctionData("createPod",[msca, cid, name]);   
             const target = POD_FACTORY_ADDRESS;
             const userOp = await formatUserOp(eth, msca, initCode, target, callData, this.main.env.SEPOLIA_API_KEY || "x");
 
@@ -108,6 +108,7 @@ export class Pod {
                     const { transactionHash } = await getUserOperationByHash([opHash],this.main.env.SEPOLIA_API_KEY || "x");
                     
                     if(transactionHash != null) {
+                        // console.log(transactionHash);
                         const txsinternalResult: any = await eth.getInternalTransactions(transactionHash);
                         if(txsinternalResult.status == '1') {
                             clearInterval(interval);
@@ -135,6 +136,8 @@ export class Pod {
 
         return new Promise( async (resolve, reject) => {
 
+            console.log("hi");
+
             let eth = this.main.eth;
 
             if (!eth.checkPaymasterBalance()) reject();
@@ -142,11 +145,9 @@ export class Pod {
             const { initCode, msca } = await create_init_code(eth);
             this.main.eth.loadSmartAccount(msca);
 
-            const callData = eth.podContract.interface.encodeFunctionData("update",[cid]);   
+            const callData = eth.podContract.interface.encodeFunctionData("update",[this.main.plugin.settings.msca,cid]);  
             const target = pod_addr;
             const userOp = await formatUserOp(eth, msca, initCode, target, callData, this.main.env.SEPOLIA_API_KEY || "");
-
-            // console.log(userOp);
 
             const opHash = await sendUserOperation(
                 userOp,
@@ -272,8 +273,6 @@ export class Pod {
                 invitee = i
             }
         }
-
-      
 
         if(writePermissions) {
 

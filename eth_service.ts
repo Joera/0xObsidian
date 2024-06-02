@@ -3,13 +3,14 @@ import { ACCOUNT_FACTORY_ADDRESS, ENTRYPOINT_ADDRESS, PAYMASTER_ADDRESS, POD_FAC
 
 import * as ep from './contracts/EntryPoint.json';
 import * as af from './contracts/AccountFactory.json';
-import * as ac from './contracts/ModularAccount.json'
-import * as pf from './contracts/PodFactory.json';
-import * as po from './contracts/Pod.json';
+import * as ac from './contracts/ModularAccount.json';
+import * as pf from './hardhat/artifacts/contracts/Pod.sol/PodFactory.json';
+import * as po from './hardhat/artifacts/contracts/Pod.sol/Pod.json';
 import { MessageChannel } from "worker_threads";
 import { Notice } from "obsidian";
 import { IMainController } from "main.ctrlr";
 import { InviteAcceptModal } from "invite-accept.modal";
+import { UpdateAcceptModal } from "invite-accept.modal copy";
 
 export interface IEthService {
     signer: Signer;
@@ -113,13 +114,9 @@ export class EthService implements IEthService {
     async checkPaymasterBalance() : Promise<boolean> {
 
         let b = true;
-        // console.log(`paymaster ${PAYMASTER_ADDRESS}`)
         const balance = await this.entrypoint.balanceOf(PAYMASTER_ADDRESS);
-        // console.log(balance);
 
         if(balance < 500000) {
-
-         
             console.log(`paymaster balance dangerously low!  ${ethers.formatEther(balance)}`)
             b = false;
         } else {
@@ -160,11 +157,13 @@ export class EthService implements IEthService {
             const pod = ethers.getAddress('0x' + topics[1].slice(26));
             const from = ethers.getAddress('0x' + topics[2].slice(26));
             const to = ethers.getAddress('0x' + topics[3].slice(26));
-
+            
             if(to == ethers.getAddress(this.main.plugin.settings.msca)){
 
-                const ensName = await this.ensProvider.lookupAddress(to);
+            //    const ensName = await this.ensProvider.lookupAddress(to);
                 const modal = new InviteAcceptModal(this.main, from, pod).open();
+            } else {
+                console.log("ignored update");
             }
         })
     }
@@ -178,7 +177,7 @@ export class EthService implements IEthService {
         const filter = {
             topics: [
                 // using the one from contract logs on etherscan 
-                "0xa7bb3677cd4aba711195e286591cc724ceb486deac3c06a53222565000091d32"
+                "0x1a13d7c8718d93d5b2ba41b491d2d700b627a94cfacd2ef001be42bec827bb9a"
             ]
         };
 
@@ -192,11 +191,11 @@ export class EthService implements IEthService {
             const from = ethers.getAddress('0x' + topics[2].slice(26));
             const cid = topics[3];
 
-            const msg = `a pod has been updated`;
-            console.log(`podcontract: ${pod}`);
-            new Notice(msg,0);
-              
-         
+            if(from != ethers.getAddress(this.main.plugin.settings.msca)){
+                const modal = new UpdateAcceptModal(this.main, from, pod).open();
+            } else {
+                console.log("ignored update");
+            }
         })
     }
 }
