@@ -22,7 +22,7 @@ contract Pod  {
         name = _name;
     }
 
-     function _exists(address[] memory _array, address _address) public pure returns (bool) {
+    function _exists(address[] memory _array, address _address) public pure returns (bool) {
         
         for (uint i = 0; i < _array.length; i++) {
             if (_array[i] == _address) {
