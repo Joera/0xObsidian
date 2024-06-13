@@ -13,9 +13,6 @@ export default function createFormData(sourcePath: string) : Promise<any> {
 
     return new Promise( async (resolve, reject) => {
 
-        console.log(sourcePath);
-
-        
         
         fs.stat(sourcePath, async (err: any, stats:any) => {
             if (err) {

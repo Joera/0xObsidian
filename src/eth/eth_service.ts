@@ -9,6 +9,7 @@ import * as po from '../../hardhat/artifacts/contracts/Pod.sol/Pod.json';
 import { IMainController } from "../main.ctrlr";
 import { InviteAcceptModal } from "../ui/invite-accept.modal";
 import { UpdateAcceptModal } from "../ui/update-accept.modal";
+import { IUpdate } from "src/types/oxo";
 
 export interface IEthService {
     signer: Signer;
@@ -26,6 +27,8 @@ export interface IEthService {
     checkPaymasterBalance: () => Promise<boolean>;
     listenToInvites: () => void;
     listenToUpdates: () => void;
+    fetchInvites: (last_update: string) => void;
+    fetchUpdates: (last_update: string) => void;
     logPaymasterBalance: () => void;
 }
  
@@ -64,6 +67,17 @@ export class EthService implements IEthService {
 
         this.updateSigner(this.main.author.private_key);
         this.loadContracts();
+
+        this.main.plugin.settings.updates.sort( (a: IUpdate,b: IUpdate) => {
+            return parseInt(b.block_number) - parseInt(a.block_number)
+
+        })
+
+        const last_update = this.main.plugin.settings.updates[0];
+
+
+        this.fetchInvites(last_update.block_number);
+        this.fetchUpdates(last_update.block_number);
         this.listenToInvites();
         this.listenToUpdates();
     }
@@ -131,10 +145,6 @@ export class EthService implements IEthService {
 
     async listenToInvites() {
 
-        let t = ethers.id("PodInvite(address, address, address)");
-        // duuno why the topic hash it not the same ???????? 
-        // console.log(t);
-
         const filter = {
             topics: [
                 // using the one from contract logs on etherscan 
@@ -142,82 +152,131 @@ export class EthService implements IEthService {
             ]
         };
 
-        // console.log("listening to invites");
-
         this.provider.on(filter, async (log) => {
-
-            console.log("received event");
-
-            const { topics, data } = log;
-
-            const pod = ethers.getAddress('0x' + topics[1].slice(26));
-            const from = ethers.getAddress('0x' + topics[2].slice(26));
-            const to = ethers.getAddress('0x' + topics[3].slice(26));
-
-            this.main.eth.loadPod(pod);
-            const name: string = await this.main.eth.podContract.name();
-
-            if(to == ethers.getAddress(this.main.author.msca || "X")){
-
-            //    const ensName = await this.ensProvider.lookupAddress(to);
-                const modal = new InviteAcceptModal(this.main, name, from, pod).open();
-            } else {
-                console.log("ignored update");
-            }
+            this.handleInviteEvent(log)
         })
     }
 
     async listenToUpdates() {
 
-        let t = ethers.id("PodUpdate(address, string)");
-        // duuno why the topic hash it not the same ???????? 
-        // console.log(t);
+        const filter = {
+            topics: [
+                "0x1a13d7c8718d93d5b2ba41b491d2d700b627a94cfacd2ef001be42bec827bb9a"
+            ]
+        };
+
+        this.provider.on(filter, async (log) => {
+           this.handleUpdateEvent(log)
+        })
+    }
+
+    async fetchUpdates(last_update: string) {
 
         const filter = {
             topics: [
                 // using the one from contract logs on etherscan 
                 "0x1a13d7c8718d93d5b2ba41b491d2d700b627a94cfacd2ef001be42bec827bb9a"
-            ]
+            ],
+            fromBlock: last_update
         };
 
-        // console.log("listening to updates");
+        const logs = await this.provider.getLogs(filter);
 
-        this.provider.on(filter, async (log) => {
+        for (let log of logs) {
+            this.handleUpdateEvent(log)
+        }
+        
+    }
 
-            const { topics, blockNumber } = log;
+    async fetchInvites(last_update: string) {
+        
+        const filter = {
+            topics: [
+                // using the one from contract logs on etherscan 
+                "0x9869203779433091b9033c50a09cb80d8b9123be346b41ff4efe82d2b2d898d7"
+            ],
+            fromBlock: last_update
+        };
 
-            const pod = ethers.getAddress('0x' + topics[1].slice(26));
-            const from = ethers.getAddress('0x' + topics[2].slice(26));
-            const cid = topics[3];
+        const logs = await this.provider.getLogs(filter);
 
-            this.main.eth.loadPod(pod);
-            const readers: string[] = await this.main.eth.podContract.getReaders();
-            const name: string = await this.main.eth.podContract.name();
-            const msca = this.main.author.msca || "x";
+        for (let log of logs) {
+            this.handleInviteEvent(log)
+        }
+    }
 
-            // console.log(readers);
-            // console.log(ethers.getAddress(msca))
+    async handleUpdateEvent(log: any) {
 
-            this.main.plugin.settings.updates.push({    
-                accepted: false,
-                block_number: blockNumber,
-                cid,
-                contract: pod,
-                from,
-                name
-            })
+        console.log(log);
 
-            if(
-                from != ethers.getAddress(msca)
-                &&
-                readers.indexOf(ethers.getAddress(msca)) > -1
-            
-            ){
-                const modal = new UpdateAcceptModal(this.main, blockNumber, name, from, pod).open();
-            } else {
-                console.log("ignored update");
-            }
+        const { topics, blockNumber } = log;
+
+        const pod = ethers.getAddress('0x' + topics[1].slice(26));
+        const from = ethers.getAddress('0x' + topics[2].slice(26));
+        const cid = topics[3];
+
+        this.main.eth.loadPod(pod);
+        const readers: string[] = await this.main.eth.podContract.getReaders();
+        const name: string = await this.main.eth.podContract.name();
+        const msca = this.main.author.msca || "x";
+
+        // console.log(`blocknumber: ${blockNumber}`);
+
+        // console.log(`should be name ${name}`);
+
+        this.main.plugin.settings.updates.push({    
+            accepted: false,
+            block_number: blockNumber,
+            cid,
+            contract: pod,
+            from,
+            name
         })
+
+        this.main.plugin.saveSettings();
+
+        if(
+            from != ethers.getAddress(msca)
+            &&
+            readers.indexOf(ethers.getAddress(msca)) > -1
+        
+        ){
+            const modal = new UpdateAcceptModal(this.main, blockNumber, name, from, pod).open();
+        } else {
+            console.log("ignored update");
+        }
+    }
+
+    async handleInviteEvent(log: any) {
+
+        const { topics, blockNumber } = log;
+
+        const pod = ethers.getAddress('0x' + topics[1].slice(26));
+        const from = ethers.getAddress('0x' + topics[2].slice(26));
+        const to = ethers.getAddress('0x' + topics[3].slice(26));
+
+        this.main.eth.loadPod(pod);
+        const name: string = await this.main.eth.podContract.name();
+        const cid: string = await this.main.eth.podContract.cid();
+
+        this.main.plugin.settings.updates.push({    
+            accepted: false,
+            block_number: blockNumber,
+            cid,
+            contract: pod,
+            from,
+            name
+        })
+
+        this.main.plugin.saveSettings();
+
+        if(to == ethers.getAddress(this.main.author.msca || "X")){
+
+        //    const ensName = await this.ensProvider.lookupAddress(to);
+            const modal = new InviteAcceptModal(this.main, blockNumber, from, name, pod).open();
+        } else {
+            console.log("ignored update");
+        }
     }
 }
 

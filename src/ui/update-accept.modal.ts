@@ -43,6 +43,7 @@ export class UpdateAcceptModal extends Modal {
                 let update = this.main.plugin.settings.updates.find( u => u.block_number == this.block_number && u.contract == this.contract && u.from == this.from);
                 if (update != undefined) {
                     update.accepted = true;
+                    this.main.plugin.saveSettings();
                 }
                 this.main.import(this.contract, this.name);
             }));  

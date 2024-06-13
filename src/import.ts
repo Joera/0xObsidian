@@ -12,10 +12,14 @@ export const importAndMerge = async (main: IMainController, cid: string, name: s
 
     const entries = Tarball.extract(tarbytes);
 
+    console.log('entries: ' + entries.length)
+
     for (let entry of entries){
         if (entry.fileName.endsWith(".md")){
+            console.log('.md ' + entry.fileName);
             await main.plugin.app.vault.create(entry.fileName, entry.getContentAsText());
         } else {
+            console.log('folder? ' + entry.fileName);
             await main.plugin.app.vault.createFolder(entry.fileName);
         }
     }

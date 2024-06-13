@@ -13,13 +13,15 @@ const options = [
 export class InviteAcceptModal extends Modal {
 
     main: IMainController
+    block_number: string
     from: string;
     contract: string;
     name: string;
 
-    constructor(main: IMainController, from: string, name: string, contract: string) {
+    constructor(main: IMainController, block_number: string, from: string, name: string, contract: string) {
         super(main.plugin.app)
         this.main = main
+        this.block_number = block_number;
         this.name = name
         this.from = from;
         this.contract = contract;
@@ -38,6 +40,11 @@ export class InviteAcceptModal extends Modal {
                     .setCta()
                     .onClick(() => {
                         this.close();
+                        let update = this.main.plugin.settings.updates.find( u => u.block_number == this.block_number && u.contract == this.contract && u.from == this.from);
+                        if (update != undefined) {
+                            update.accepted = true;
+                            this.main.plugin.saveSettings();
+                        }
                         this.main.import(this.contract, this.name);
                     }));
     }

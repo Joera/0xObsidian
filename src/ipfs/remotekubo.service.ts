@@ -8,11 +8,11 @@ export const uploadDir = async (sourcePath: string): Promise<string> => {
 
     return new Promise( async (resolve,reject) => {
 
-        console.log('yoooooooooo')
+        // console.log('yoooooooooo')
 
         const { formData, boundary } = await createFormData(sourcePath);
 
-        console.log(formData)
+        // console.log(formData)
 
         const headers = {
             'Content-Type': `multipart/form-data; boundary=${boundary}`,

@@ -6,12 +6,14 @@ import { IUpdate } from "./types/oxo";
 
 export interface IOxOSettings {
 	authors: IAuthor[],
-	updates: IUpdate[]
+	updates: IUpdate[],
+	updatesIncludeMyOwn: boolean
 }
 
 export const DEFAULT_SETTINGS: IOxOSettings = {
 	authors : [],
-	updates: []
+	updates: [],
+	updatesIncludeMyOwn: false
 }
 
 
@@ -128,38 +130,58 @@ export class OxOUpdatesTab extends PluginSettingTab {
 		new Setting(containerEl)
 		.setName('Updates')
 		.setDesc('Overview of updates on your pods');
+
+		new Setting(containerEl)
+				.setDesc("Show my own updates")
+				.addToggle( button => button
+					.setValue(this.plugin.settings.updatesIncludeMyOwn)
+					.onChange( async () => {
+						
+						this.plugin.settings.updatesIncludeMyOwn = !this.plugin.settings.updatesIncludeMyOwn;
+						await this.plugin.saveSettings();
+						this.plugin.updatesTab.display();
+					})
+				);
+
+		let updates = JSON.parse(JSON.stringify(this.plugin.settings.updates));
+
+
+        updates.sort( (a: IUpdate,b: IUpdate) => {
+            return parseInt(b.block_number) - parseInt(a.block_number)
+
+        });
+
+		console.log(this.plugin.settings.updatesIncludeMyOwn);
+
+		if (!this.plugin.settings.updatesIncludeMyOwn) {
+
+			console.log(this.plugin.ctrlr.author.msca)
+			updates = updates.filter( (u: IUpdate ) => {
+				return u.from != this.plugin.ctrlr.author.msca
 	
-		for (let update of this.plugin.settings.updates) {
+			});
+		}
+	
+		for (let update of updates) {
 
 			const authorEl = containerEl.createEl("div", { });
-			authorEl.setCssStyles({"marginTop":"2rem", "paddingBottom":"1rem", "borderBottom": "1px solid #000"})
+			authorEl.setCssStyles({"display":"flex","flexDirection":"row","justifyContent": "space-between","alignItems": "center","borderBottom": "1px solid #000"})
+
+			const nameEl = authorEl.createEl("div", { });
+			nameEl.innerText = update.name;
+
+			const fromEl = authorEl.createEl("div", { });
+			fromEl.innerText = '...' + update.from.slice(-4);
+
+			const blockEl = authorEl.createEl("div", { });
+			blockEl.innerText = update.block_number;
 
 			new Setting(authorEl)
-				.setName('Name')
-				.setDesc('')
-				.addText(text => text
-					.setValue(update.name)
-				);
-
-			new Setting(authorEl)
-				.setName('From')
-				.setDesc('')
-				.addText(text => text
-					.setValue(update.from)
-				);
-
-			new Setting(authorEl)
-				.setName('BlockNumber')
-				.setDesc('')
-				.addText(text => text
-					.setValue(update.block_number)
-				);
-
-			new Setting(authorEl)
-				.addButton( button => button
-					.setButtonText("Import")
-					.onClick( async () => {
-						this.plugin.ctrlr.import(update.contract, update.name)
+				.addToggle( button => button
+					.setValue(update.accepted)
+					.onChange( async () => {
+						
+						//update.accepted = !update.accepted;
 						await this.plugin.saveSettings();
 						this.plugin.updatesTab.display();
 					})

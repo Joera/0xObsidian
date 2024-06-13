@@ -19,10 +19,11 @@ export class Author {
     profile: string | undefined
 
     constructor(name: string, active: boolean, private_key: string | undefined, msca: string | undefined, profile: string | undefined) {
+
         this.name = name;
         this.active = active;
         this.private_key = private_key || this._generatePK();
-        this.msca = msca,
+        this.msca = msca != undefined ? ethers.getAddress(msca) : undefined,
         this.profile = profile
     }
 

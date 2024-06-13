@@ -57,7 +57,7 @@ export const formatUserOp = async (ethService: IEthService, msca: string, initCo
         signature: "0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c"
     }
 
-    // console.log(userOp);
+    console.log(userOp);
 
     const { preVerificationGas, verificationGasLimit, callGasLimit} =  await estimateUserOpGas(userOp, ENTRYPOINT_ADDRESS, token);
 
@@ -124,7 +124,9 @@ export const estimateUserOpGas = async (userOp: any, contract_address: string, t
         fetch(`https://arb-sepolia.g.alchemy.com/v2/${token}`, options)
             .then(response => response.json())
             .then(response => {
-                // console.log(response);
+                if(response.result == undefined || response.result.callGasLimit == undefined){
+                    console.log(response);
+                }   
                 resolve(response.result)
              })
             .catch(err => {
