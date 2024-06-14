@@ -25,6 +25,7 @@ export interface IEthService {
     loadPod: (addr: string) => void;
     getInternalTransactions: (txHash: string) => Promise<any[]>;
     checkPaymasterBalance: () => Promise<boolean>;
+    blockTime: (block_number: string) => Promise<string>
     listenToInvites: () => void;
     listenToUpdates: () => void;
     fetchInvites: (last_update: string) => void;
@@ -104,6 +105,18 @@ export class EthService implements IEthService {
     loadPod(pod_addr: string) {
 
         this.podContract = new ethers.Contract(pod_addr, po.abi, this.signer);
+    }
+
+    async blockTime(block_number: string) : Promise<string> {
+
+        const block = await this.provider.getBlock(block_number);
+        if (block != null) {
+            const blockTime = new Date(block.timestamp * 1000); 
+            return blockTime.toLocaleDateString('nl') + " " + blockTime.toLocaleTimeString('nl'); //   toLocaleDateTimeString('nl')
+        } else {
+            return '-'
+        }
+    
     }
 
     getInternalTransactions = async (txHash: string) : Promise<any[]> => {

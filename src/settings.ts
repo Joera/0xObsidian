@@ -122,7 +122,7 @@ export class OxOUpdatesTab extends PluginSettingTab {
 		this.name = "0xO Updates";
 	}
 
-	display(): void {
+	async display(): Promise<void> {
 		
 		const {containerEl} = this;
 		containerEl.empty();
@@ -174,7 +174,7 @@ export class OxOUpdatesTab extends PluginSettingTab {
 			fromEl.innerText = '...' + update.from.slice(-4);
 
 			const blockEl = authorEl.createEl("div", { });
-			blockEl.innerText = update.block_number;
+			blockEl.innerText = await this.plugin.ctrlr.eth.blockTime(update.block_number);
 
 			new Setting(authorEl)
 				.addToggle( button => button
