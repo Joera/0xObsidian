@@ -76,9 +76,10 @@ export class EthService implements IEthService {
 
         const last_update = this.main.plugin.settings.updates[0];
 
-
-        this.fetchInvites(last_update.block_number);
-        this.fetchUpdates(last_update.block_number);
+        if(last_update != undefined) {
+            this.fetchInvites(last_update.block_number);
+            this.fetchUpdates(last_update.block_number);
+        }
         this.listenToInvites();
         this.listenToUpdates();
     }
