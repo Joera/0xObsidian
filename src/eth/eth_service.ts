@@ -191,7 +191,7 @@ export class EthService implements IEthService {
                 // using the one from contract logs on etherscan 
                 "0x1a13d7c8718d93d5b2ba41b491d2d700b627a94cfacd2ef001be42bec827bb9a"
             ],
-            fromBlock: last_update
+            fromBlock: parseInt(last_update) + 1
         };
 
         const logs = await this.provider.getLogs(filter);
@@ -209,7 +209,7 @@ export class EthService implements IEthService {
                 // using the one from contract logs on etherscan 
                 "0x9869203779433091b9033c50a09cb80d8b9123be346b41ff4efe82d2b2d898d7"
             ],
-            fromBlock: last_update
+            fromBlock: parseInt(last_update) + 1
         };
 
         const logs = await this.provider.getLogs(filter);
