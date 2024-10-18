@@ -1,14 +1,15 @@
 import { Tarball } from "@obsidize/tar-browserify";
 import { IMainController } from "./main.ctrlr";
-import { fetchDir } from "./ipfs/remotekubo.service";
+import { dagGet, getRecursive } from "./ipfs/remotekubo.service";
+import { IpldNote, IpldPod } from "./types/ipld";
 
 
-export const importAndMerge = async (main: IMainController, cid: string, name: string) : Promise<boolean> => {
+export const importAndMergeWithTar = async (main: IMainController, cid: string, name: string) : Promise<boolean> => {
 
     const tarPath = main.basePath + '/' + 'tmp.tar';
     const path = name;
 
-    const tarbytes = await fetchDir(cid);
+    const tarbytes = await getRecursive(cid);
 
     const entries = Tarball.extract(tarbytes);
 
@@ -36,6 +37,45 @@ export const importAndMerge = async (main: IMainController, cid: string, name: s
             path
         );
     }
+
+    return true;
+}
+
+export const importAndMerge = async (main: IMainController, cid: string, name: string) : Promise<boolean> => {
+
+    const ipldPod : IpldPod = JSON.parse(await dagGet(cid));
+
+    if(main.plugin.app.vault.getFolderByPath(name) == null) {
+        const folder = await main.plugin.app.vault.createFolder(name);
+    }
+
+    console.log(ipldPod);
+        
+    for (let link of ipldPod.Links) {
+
+        let ipldNote = JSON.parse(await dagGet(Object.values(link.Hash)[0]));
+
+        console.log(ipldNote.Data["/"].bytes);  
+
+        let file = main.plugin.app.vault.getFileByPath(ipldNote.path);
+        
+        if (file == null) {
+
+            file = await main.plugin.app.vault.create(ipldNote.path, ipldNote.body);
+        
+        } else {
+
+            await main.plugin.app.vault.modify(file, ipldNote.body);
+        }
+        
+        await main.plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
+            for ( let [key, value] of Object.entries(ipldNote)) {
+                if(["body","slug","title","path"].indexOf(key) < 0) {
+                    frontmatter[key] = value;
+                }   
+            }
+        });
+    }       
 
     return true;
 }

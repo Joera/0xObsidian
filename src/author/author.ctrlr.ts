@@ -9,8 +9,8 @@ export const loadAuthors = async (main: IMainController) => {
             author.name,
             author.active = true,
             author.private_key,
-            author.msca,
-            author.profile
+            author.eoa,
+            author.msca
         )
     }
 }

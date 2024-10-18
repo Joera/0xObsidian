@@ -2,7 +2,22 @@ import { Wallet, ethers } from "ethers";
 
 import { create_init_code, estimateUserOpGas, eth_salt, formatUserOp, getUserOperationByHash, rundler_maxPriorityFeePerGas, sendUserOperation, zeroEth } from "../eth/eth_userop";
 import { ENTRYPOINT_ADDRESS, POD_FACTORY_ADDRESS  } from "../eth/eth_contracts";
-import { IEthService } from "../eth/eth_service";
+import { IEthService } from "../eth/msca_service";
+
+
+
+export const deployGnosisSafe = async (ethService: IEthService, token: string): Promise<string> => {
+
+    // ON BASE SEPOLIA (because arb sepolia does not have app interface for gnosis safe)
+
+    return new Promise( async (resolve, reject) => {
+
+        if (!ethService.checkPaymasterBalance()) reject();
+
+     //    await this.ethService.deploySafeContract(SAFE_FACTORY, )
+
+    });
+}
 
 export const deploySmartAccount = async (ethService: IEthService, token: string): Promise<string> => {
 

@@ -1,5 +1,5 @@
 import { POD_FACTORY_ADDRESS, ENTRYPOINT_ADDRESS } from "./eth/eth_contracts";
-import { IEthService } from "./eth/eth_service";
+import { IEthService } from "./eth/msca_service";
 import { create_init_code, formatUserOp, sendUserOperation, getUserOperationByHash } from "./eth/eth_userop";
 
 export const sendInvite = (ethService: IEthService, method: string, pod_address: string, invitee: string, token: string) : Promise<void> => {
@@ -8,7 +8,7 @@ export const sendInvite = (ethService: IEthService, method: string, pod_address:
 
         if (!ethService.checkPaymasterBalance()) reject();
 
-        console.log(pod_address)
+        // console.log(pod_address)
       
         const { initCode, msca } = await create_init_code(ethService);
         await ethService.loadSmartAccount(msca);

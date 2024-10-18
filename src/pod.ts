@@ -1,5 +1,5 @@
 import { ENTRYPOINT_ADDRESS, PAYMASTER_ADDRESS, POD_FACTORY_ADDRESS } from "./eth/eth_contracts";
-import { IEthService } from "./eth/eth_service";
+import { IEthService } from "./eth/msca_service";
 import { create_init_code, formatUserOp, getUserOperationByHash, sendUserOperation } from "./eth/eth_userop";
 import { sendInvite } from "./invite";
 import { IMainController } from "./main.ctrlr";
@@ -89,14 +89,14 @@ export class Pod {
 
             const callData = eth.podFactory.interface.encodeFunctionData("createPod",[msca, cid, name]);   
             const target = POD_FACTORY_ADDRESS;
-            const userOp = await formatUserOp(eth, msca, initCode, target, callData, this.main.env.SEPOLIA_API_KEY || "x");
+            const userOp = await formatUserOp(eth, msca, initCode, target, callData, this.main.plugin.settings.alchemy_key  || "x");
 
             // console.log(userOp);
 
             const opHash = await sendUserOperation(
                 userOp,
                 ENTRYPOINT_ADDRESS,
-                this.main.env.SEPOLIA_API_KEY || "x"
+                this.main.plugin.settings.alchemy_key || "x"
             );
 
             // console.log("opHash:" + opHash);
@@ -105,7 +105,7 @@ export class Pod {
                 
                 try {
                     
-                    const { transactionHash } = await getUserOperationByHash([opHash],this.main.env.SEPOLIA_API_KEY || "x");
+                    const { transactionHash } = await getUserOperationByHash([opHash], this.main.plugin.settings.alchemy_key  || "x");
                     
                     if(transactionHash != null) {
                         // console.log(transactionHash);
@@ -143,17 +143,15 @@ export class Pod {
             const { initCode, msca } = await create_init_code(eth);
             this.main.eth.loadSmartAccount(msca);
 
-            console.log(cid);
-            console.log(this.main.author);
             const callData = eth.podContract.interface.encodeFunctionData("update",[this.main.author.msca,cid]);  
             console.log(callData);
             const target = pod_addr;
-            const userOp = await formatUserOp(eth, msca, initCode, target, callData, this.main.env.SEPOLIA_API_KEY || "");
+            const userOp = await formatUserOp(eth, msca, initCode, target, callData, this.main.plugin.settings.alchemy_key  || "");
 
             const opHash = await sendUserOperation(
                 userOp,
                 ENTRYPOINT_ADDRESS,
-                this.main.env.SEPOLIA_API_KEY || ""
+                this.main.plugin.settings.alchemy_key || ""
             );
 
             // console.log("opHash:" + opHash);
@@ -162,7 +160,7 @@ export class Pod {
                 
                 try {
                     
-                    const { transactionHash } = await getUserOperationByHash([opHash],this.main.env.SEPOLIA_API_KEY || "");
+                    const { transactionHash } = await getUserOperationByHash([opHash], this.main.plugin.settings.alchemy_key  || "");
                     console.log(transactionHash);
                     if(transactionHash != null) {
                         clearInterval(interval);

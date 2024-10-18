@@ -9,11 +9,10 @@ import basePathConverter from 'base-path-converter';
 
 import path from "path";
 
-export default function createFormData(sourcePath: string) : Promise<any> {
+export function directoryFormData(sourcePath: string) : Promise<any> {
 
     return new Promise( async (resolve, reject) => {
 
-        
         fs.stat(sourcePath, async (err: any, stats:any) => {
             if (err) {
                 reject(err);
@@ -41,29 +40,51 @@ export default function createFormData(sourcePath: string) : Promise<any> {
                     });
 
                     resolve({
-
                         formData: (await data.buffer()).toString(),
                         boundary: data.getBoundary()
                     });
                 });
             } 
-            
-            
-            // else { // NOT TESTED
-
-            //     await fs.readFile(sourcePath, async (err: any, content: any) => {
-                    
-            //         if (err) throw err;
-            //         let fileStream = createReadStream(content, { encoding: 'utf-8'});
-            //         data.append('file', fileStream);
-            //     });
-
-            //     resolve({
-
-            //         formData: (await data.buffer()).toString(),
-            //         boundary: data.getBoundary()
-            //     });
-            // }
         });
     });
+}
+
+export function singleFileFormData(note: any) : Promise<any> {
+
+    return new Promise( async (resolve, reject) => {
+
+        const slug = note.slug || note.name || "nft";
+
+        let data = new Multipart();
+        data.append('file', Buffer.from(JSON.stringify(note)), {
+            'filename': slug + ".json"
+        });
+
+        resolve({
+            formData: (await data.buffer()).toString(),
+            boundary: data.getBoundary()
+        })
+    });
+}
+
+export function singleFileFormDataFromPath(path: string) : any {
+
+    // return new Promise( async (resolve, reject) => {
+
+        let filename = path.split("/")[path.split("/").length - 1];
+        const fileStream = fs.createReadStream(path);
+
+        let data = new Multipart();
+        data.append('file', fileStream, {
+            'filename': filename,
+            'contentType': 'image/tiff'
+        });
+
+        return data
+
+        // resolve({
+        //     formData: data,
+        //     boundary: data.getBoundary()
+        // })
+   // });
 }

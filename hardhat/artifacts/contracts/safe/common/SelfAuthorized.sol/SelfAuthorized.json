@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "SelfAuthorized",
+  "sourceName": "contracts/safe/common/SelfAuthorized.sol",
+  "abi": [],
+  "bytecode": "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea26469706673582212204ea5685c3ac7d4788cb778e9481cd5abbd6639ead3811fc2394167da765639cc64736f6c63430008180033",
+  "deployedBytecode": "0x6080604052600080fdfea26469706673582212204ea5685c3ac7d4788cb778e9481cd5abbd6639ead3811fc2394167da765639cc64736f6c63430008180033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

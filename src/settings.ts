@@ -2,18 +2,27 @@ import { PluginSettingTab } from "obsidian";
 import { App, Setting } from "obsidian";
 import OxO from "./main";
 import { IAuthor } from "./author/author";
-import { IUpdate } from "./types/oxo";
+import { IInvite, IUpdate } from "./types/oxo";
+import { Wallet } from "ethers";
 
 export interface IOxOSettings {
 	authors: IAuthor[],
-	updates: IUpdate[],
-	updatesIncludeMyOwn: boolean
+	updates: { [key:string] : IUpdate[] },
+	invites: IInvite[],
+	updatesIncludeMyOwn: boolean,
+	listening: boolean
+	alchemy_key: string
+	arbiscan_key: string
 }
 
 export const DEFAULT_SETTINGS: IOxOSettings = {
 	authors : [],
-	updates: [],
-	updatesIncludeMyOwn: false
+	updates: {},
+	invites: [],
+	updatesIncludeMyOwn: false,
+	listening: false,
+	alchemy_key: "",
+	arbiscan_key: ""
 }
 
 
@@ -24,13 +33,25 @@ export class OxOAuthorsTab extends PluginSettingTab {
 	constructor(app: App, plugin: OxO) {
 		super(app, plugin);
 		this.plugin = plugin;
-		this.name = "0xO Authors";
+		this.name = "0xO authors";
 	}
 
 	display(): void {
 		
 		const {containerEl} = this;
 		containerEl.empty();
+
+		new Setting(containerEl)
+		.setName('Listen to updates')
+		.setDesc('')
+		.addToggle( button => button
+			.setValue(this.plugin.settings.listening)
+			.onChange( async () => {
+				this.plugin.settings.listening = !this.plugin.settings.listening;
+				await this.plugin.saveSettings();
+				this.plugin.authorsTab.display();
+			})
+		);
 
 		new Setting(containerEl)
 		.setName('Authors')
@@ -47,6 +68,12 @@ export class OxOAuthorsTab extends PluginSettingTab {
 			const authorEl = containerEl.createEl("div", { });
 			authorEl.setCssStyles({"marginTop":"2rem", "paddingBottom":"1rem", "borderBottom": "1px solid #000"})
 
+			if (author.eoa == undefined) {
+				const wallet = new Wallet(author.private_key);
+				author.eoa = wallet.address;
+				this.plugin.saveSettings();
+			}
+
 			new Setting(authorEl)
 				.setName('Name')
 				.setDesc('')
@@ -60,7 +87,7 @@ export class OxOAuthorsTab extends PluginSettingTab {
 
 			new Setting(authorEl)
 				.setName('Address')
-				.setDesc('')
+				.setDesc('The address for the modular smart account that operates for you on chain')
 				.addText(text => text
 					.setValue(author.msca || "")
 					// .onChange(async (value) => {
@@ -71,14 +98,10 @@ export class OxOAuthorsTab extends PluginSettingTab {
 				);
 
 			new Setting(authorEl)
-				.setName('Profile/Config')
-				.setDesc('')
+				.setName('EOA')
+				.setDesc('The address for the externally owned account with a private key stored in Obsidian')
 				.addText(text => text
-					.setValue(author.profile || "")
-					.onChange(async (value) => {
-						author.profile = value;
-						await this.plugin.saveSettings();
-					})
+					.setValue(author.eoa)
 				);
 
 			new Setting(authorEl)
@@ -109,17 +132,41 @@ export class OxOAuthorsTab extends PluginSettingTab {
 					})
 				);
 		}
+
+		new Setting(containerEl)
+			.setName("ALCHEMY KEY")
+			.addText((text) =>
+				text
+					.setValue(this.plugin.settings.alchemy_key)
+					.onChange(async (value) => {
+						this.plugin.settings.alchemy_key = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("ARBISCAN KEY")
+			.addText((text) =>
+				text
+					.setValue(this.plugin.settings.arbiscan_key)
+					.onChange(async (value) => {
+						this.plugin.settings.arbiscan_key = value;
+						await this.plugin.saveSettings();
+					})
+			);
 	}
 }
 
 export class OxOUpdatesTab extends PluginSettingTab {
 	plugin: OxO;
 	name: string;
+	updates: IUpdate[];
 
-	constructor(app: App, plugin: OxO) {
+	constructor(app: App, plugin: OxO, name: string, updates: IUpdate[]) {
 		super(app, plugin);
 		this.plugin = plugin;
-		this.name = "0xO Updates";
+		this.name = '0xOPod: ' + name;
+		this.updates = updates
 	}
 
 	async display(): Promise<void> {
@@ -129,7 +176,7 @@ export class OxOUpdatesTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 		.setName('Updates')
-		.setDesc('Overview of updates on your pods');
+		.setDesc('Overview of updates');
 
 		new Setting(containerEl)
 				.setDesc("Show my own updates")
@@ -143,7 +190,7 @@ export class OxOUpdatesTab extends PluginSettingTab {
 					})
 				);
 
-		let updates = JSON.parse(JSON.stringify(this.plugin.settings.updates));
+		let updates = JSON.parse(JSON.stringify(this.updates));
 
 
         updates.sort( (a: IUpdate,b: IUpdate) => {
@@ -151,11 +198,8 @@ export class OxOUpdatesTab extends PluginSettingTab {
 
         });
 
-		console.log(this.plugin.settings.updatesIncludeMyOwn);
-
 		if (!this.plugin.settings.updatesIncludeMyOwn) {
 
-			console.log(this.plugin.ctrlr.author.msca)
 			updates = updates.filter( (u: IUpdate ) => {
 				return u.from != this.plugin.ctrlr.author.msca
 	
@@ -174,7 +218,7 @@ export class OxOUpdatesTab extends PluginSettingTab {
 			fromEl.innerText = '...' + update.from.slice(-4);
 
 			const blockEl = authorEl.createEl("div", { });
-			blockEl.innerText = await this.plugin.ctrlr.eth.blockTime(update.block_number);
+			blockEl.innerText = update.datetime;
 
 			new Setting(authorEl)
 				.addToggle( button => button
@@ -187,5 +231,9 @@ export class OxOUpdatesTab extends PluginSettingTab {
 					})
 				);
 		}
+
+		
 	}
+
+	
 }

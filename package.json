@@ -23,13 +23,14 @@
 		"typescript": "4.7.4"
 	},
 	"dependencies": {
-		"@helia/unixfs": "^3.0.6",
 		"@lit-protocol/lit-node-client": "^5.1.0",
 		"@obsidize/tar-browserify": "^4.0.0",
+		"@safe-global/api-kit": "^2.5.2",
+		"@safe-global/protocol-kit": "^5.0.2",
+		"@safe-global/safe-core-sdk-types": "^5.1.0",
 		"base-path-converter": "^1.0.2",
 		"dotenv": "^16.4.5",
 		"ethers": "^6.12.1",
-		"helia": "^4.2.2",
 		"recursive-fs": "^2.1.0",
 		"slugify": "^1.6.6",
 		"uuid": "^9.0.1"

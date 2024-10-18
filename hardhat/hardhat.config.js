@@ -3,15 +3,15 @@ require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  defaultNetwork: "arb",
+  defaultNetwork: "base_sepolia",
   networks: {
-    arb: {
-      url: process.env.SEPOLIA_RPC_URL,
+    arb_sepolia: {
+      url: process.env.ARB_SEPOLIA_RPC_URL,
       accounts: [process.env.PRIVATE_KEY]
     },
-    ipc: {
-      url: "http://localhost:8545",
-      accounts: ["d8540985d3f8b0772ce5ac1004393e2d2ac3a902c1b6115a620aa70f27b7592c"]
+    base_sepolia : {
+      url: process.env.BASE_SEPOLIA_RPC_URL,
+      accounts: [process.env.PRIVATE_KEY]
     }
   },
   solidity: {
@@ -25,7 +25,8 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-      arbitrumSepolia: 'WIRHP12YN15QTZJAUJWPZ82VKFBPVNQB3Y'
+      arbitrumSepolia: 'WIRHP12YN15QTZJAUJWPZ82VKFBPVNQB3Y',
+      baseSepolia: 'Y9FK2UGZAIBRUSQV5ZK3A6Z9YDDS14MV8E'
     }
   }
 };

@@ -1,3 +1,4 @@
+import { IUpdate } from "src/types/oxo";
 import { IMainController } from "../main.ctrlr";
 import { App, Instruction, Modal, Notice, Setting, SuggestModal } from "obsidian";
 
@@ -40,7 +41,7 @@ export class UpdateAcceptModal extends Modal {
             .setCta()
             .onClick(() => {
                 this.close();
-                let update = this.main.plugin.settings.updates.find( u => u.block_number == this.block_number && u.contract == this.contract && u.from == this.from);
+                let update = this.main.plugin.settings.updates[this.name].find( (u: IUpdate) => u.block_number == this.block_number && u.contract == this.contract && u.from == this.from);
                 if (update != undefined) {
                     update.accepted = true;
                     this.main.plugin.saveSettings();

@@ -1,28 +1,34 @@
-import { EthService, IEthService } from "./eth/eth_service";
-import * as dotenv from 'dotenv'
+import { EthService, IEthService } from "./eth/msca_service";
+// import * as dotenv from 'dotenv'
 import { IPod, Pod } from "./pod";
 import { DotSpinner } from "./ui/spinner.service";
 import { Notice } from "obsidian";
-import { uploadDir } from "./ipfs/remotekubo.service";
+import { addRecursive, add } from "./ipfs/remotekubo.service";
 import { importAndMerge } from "./import";
 import { ILitService, LitService } from "./lit/lit.service";
 import OxO from "./main";
 import { Author, IAuthor } from "./author/author";
+import { podToDag } from "./ipfs/ipld.factory";
+import { IpfsCtrlr, ipfsController } from "./ipfs/ipfs.ctrlr";
+import { ISafeService, SafeService } from "./eth/safe_service";
 
 const basePath = (app.vault.adapter as any).basePath
 
-dotenv.config({
-	path: `${basePath}/.obsidian/plugins/0xObsidian/.env`,
-	debug: false
-})
+// dotenv.config({
+// 	path: `${basePath}/.obsidian/plugins/0xObsidian/.env`,
+// 	debug: false
+// })
 
 export interface IMainController {
-    basePath: string,
-    plugin: OxO,
-    eth: IEthService,
-    env: {[key: string]: string | undefined }
-    pods: {[key: string]: IPod }
     author: IAuthor
+    basePath: string,
+    env: {[key: string]: string | undefined }
+    eth: IEthService,
+    safe: ISafeService,
+    ipfs: IpfsCtrlr,
+    plugin: OxO,    
+    pods: {[key: string]: IPod }
+    
     newAuthor: () => Promise<void>
     toggleAuthor: (author: IAuthor) => Promise<void>
     newPod: (path: string) => Promise<void>
@@ -33,18 +39,20 @@ export interface IMainController {
 }
 
 export class MainController implements IMainController { 
-    basePath: string
-    plugin: OxO
-    eth: IEthService;
-    lit: ILitService;
-    env: {[key: string]: string | undefined }
-    pods: {[key: string]: IPod } = {}
     author: IAuthor
+    basePath: string
+    env: {[key: string]: string | undefined }
+    eth: IEthService;
+    safe: ISafeService;
+    ipfs: IpfsCtrlr;
+    lit: ILitService;
+    plugin: OxO
+    pods: {[key: string]: IPod } = {}
 
     constructor(plugin: OxO) {
         this.basePath = basePath;
+        this.ipfs = ipfsController;
         this.plugin = plugin;
-        this.env = process.env
 
         this.init();
     }
@@ -60,11 +68,11 @@ export class MainController implements IMainController {
         }
 
         this.eth = new EthService(this);
+        this.safe = new SafeService(this);
         this.lit = new LitService(this);
 
         this.eth.updateSigner(this.author.private_key)
-      
-
+        this.safe.updateSigner(this.author.private_key)
         this.eth.logPaymasterBalance();
 
     }
@@ -83,7 +91,7 @@ export class MainController implements IMainController {
 
     async toggleAuthor(_author: IAuthor) {
 
-        this.author = new Author(_author.name, _author.active, _author.private_key, _author.msca, _author.profile)
+        this.author = new Author(_author.name, _author.active, _author.private_key, _author.eoa, _author.msca)
 
         if(this.author.msca == undefined ) {
             this.eth.updateSigner(this.author.private_key);
@@ -113,7 +121,7 @@ export class MainController implements IMainController {
         this.eth.loadPod(pod_addr);
         await pod.updateFrontMatter("contract", pod_addr);
         await this.lit.createAccessFile(path, pod_addr);
-        const cid = await uploadDir(this.basePath + '/' + path);
+        const cid = await addRecursive(this.basePath + '/' + path);
         await pod.update(this.eth, pod_addr, cid);
         await pod.updateFrontMatter("cid", cid);
         console.log(`new pod for folder ${path} created at: ${pod_addr}`);
@@ -144,7 +152,8 @@ export class MainController implements IMainController {
         await pod.updateFrontMatter("readers", readers);
         await pod.updateFrontMatter("authors", authors);
    
-        const newCid = await uploadDir(this.basePath + '/' + path);
+        //const newCid = await uploadDir(this.basePath + '/' + path);
+        const newCid = await podToDag(this.plugin.app, path)
         console.log(newCid);
         if (newCid != await pod.readFrontMatter("cid")) {
             await pod.update(this.eth,pod_addr, newCid);
@@ -171,15 +180,13 @@ export class MainController implements IMainController {
         }
 
         this.eth.loadPod(pod_addr);
-        await pod.invite(pod_addr, invitee, read, write, this.env.SEPOLIA_API_KEY || "x");
+        await pod.invite(pod_addr, invitee, read, write, this.plugin.settings.alchemy_key || "x");
         const { readers, authors } = await pod.permissions(this.eth, pod_addr);
         await pod.updateFrontMatter("readers", readers);
         await pod.updateFrontMatter("authors", authors);
     }
 
     async import(pod_addr: string, name: string) {
-
-     //   const name = "basedam"; // add to contract 
 
         this.eth.loadPod(pod_addr);
         const cid = await this.eth.podContract.cid();
@@ -204,7 +211,7 @@ export class MainController implements IMainController {
 
     async upload(sourcePath: string) {
 
-        return await uploadDir(sourcePath);
+        return await addRecursive(sourcePath);
     }
 }
 

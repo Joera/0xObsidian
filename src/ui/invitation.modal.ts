@@ -1,4 +1,4 @@
-import { IEthService } from "../eth/eth_service";
+import { IEthService } from "../eth/msca_service";
 import { IMainController } from "../main.ctrlr";
 import { App, Modal } from "obsidian";
 // import { inviteToPod } from "pod";

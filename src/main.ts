@@ -62,10 +62,16 @@ export default class OxO extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+
 		this.authorsTab = new OxOAuthorsTab(this.app, this);
 		this.addSettingTab(this.authorsTab);
-		this.updatesTab = new OxOUpdatesTab(this.app, this);
-		this.addSettingTab(this.updatesTab);
+
+		for (let [key, value] of Object.entries(this.settings.updates)) {
+			
+			this.updatesTab = new OxOUpdatesTab(this.app, this, key, value);
+			this.addSettingTab(this.updatesTab);
+
+		}
 	}
 
 	async clearSettings() {

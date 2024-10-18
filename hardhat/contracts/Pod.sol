@@ -75,7 +75,6 @@ contract PodFactory {
 
     // is being used as dummy call in contract creation!
     function test() pure external returns (string memory) {
-
         return "hello";
     }
 
