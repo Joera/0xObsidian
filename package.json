@@ -1,0 +1,52 @@
+{
+	"name": "obsidian-sample-plugin",
+	"version": "1.0.0",
+	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"main": "dist/main.js",
+	"type": "module",
+	"scripts": {
+		"dev": "nodemon --watch src --ext ts,tsx --exec 'npm run build'",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"version": "node version-bump.mjs && git add manifest.json versions.json"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^16.11.6",
+		"@types/uuid": "^9.0.8",
+		"@typescript-eslint/eslint-plugin": "5.29.0",
+		"@typescript-eslint/parser": "5.29.0",
+		"buffer": "6.0.3",
+		"builtin-modules": "3.3.0",
+		"esbuild": "0.17.3",
+		"nodemon": "^3.1.9",
+		"obsidian": "latest",
+		"stream-browserify": "^3.0.0",
+		"tslib": "2.4.0",
+		"typescript": "^5.7.2"
+	},
+	"dependencies": {
+		"@ipld/dag-pb": "^4.1.3",
+		"@lit-protocol/lit-node-client": "^5.1.0",
+		"@obsidize/tar-browserify": "^4.0.0",
+		"@safe-global/api-kit": "^2.5.2",
+		"@safe-global/protocol-kit": "^5.0.2",
+		"@safe-global/relay-kit": "^3.2.2",
+		"@safe-global/safe-core-sdk-types": "^5.1.0",
+		"@useorbis/db-sdk": "^0.0.60-alpha",
+		"base-path-converter": "^1.0.2",
+		"dotenv": "^16.4.5",
+		"ethers": "^6.12.1",
+		"ipfs-car": "^2.0.0",
+		"ipfs-only-hash": "^4.0.0",
+		"ipfs-unixfs-importer": "^15.3.1",
+		"multiformats": "^13.3.2",
+		"pinata-web3": "^0.5.4",
+		"recursive-fs": "^2.1.0",
+		"slugify": "^1.6.6",
+		"uuid": "^9.0.1",
+		"viem": "^2.22.2",
+		"web-streams-polyfill": "^4.1.0"
+	}
+}
