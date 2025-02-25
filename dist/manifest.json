@@ -1,0 +1,11 @@
+{
+	"id": "oxo-neutralpress",
+	"name": "0xO NeutralPress",
+	"version": "0.0.3",
+	"minAppVersion": "0.15.0",
+	"description": "Publishes notes with a distributed static site renderer",
+	"author": "Joera",
+	"authorUrl": "",
+	"fundingUrl": "",
+	"isDesktopOnly": false
+}
