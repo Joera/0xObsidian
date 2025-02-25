@@ -3,7 +3,7 @@
 	"name": "0xObsidian",
 	"version": "0.0.3",
 	"minAppVersion": "0.15.0",
-	"description": "exposes web3 methods to other plugins",
+	"description": "local signer for safe contract + web3 methods to other plugins",
 	"author": "Joera",
 	"authorUrl": "",
 	"fundingUrl": "",
