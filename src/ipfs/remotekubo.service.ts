@@ -271,6 +271,52 @@ export const addFile = async (path: any, ipfs_endpoint: string): Promise<string>
     });
 };
 
+export const addFileFromUrl = async (url: any, ipfs_endpoint: string, onlyHash?: boolean): Promise<string> => {
+
+    return new Promise( async (resolve,reject) => {
+
+        const content = await fetch(url).then(r => r.arrayBuffer());
+
+        console.log(content);
+
+        const formData = await singleFileFormData(content);
+
+        const headers = {
+            'Content-Type': `multipart/form-data; boundary=${formData.getBoundary()}`,
+        }
+
+        const path = onlyHash ? 'api/v0/add?onlyHash=true' : 'api/v0/add'
+
+        const request = net.request({
+            method: 'POST',
+            protocol: 'https:',
+            hostname: fixEndpoint(ipfs_endpoint),
+            path,
+            headers
+        });
+
+      //  formData.pipe(request);
+
+        request.on('response', (response: any) => {
+
+            response.on('data', (chunk: any) => {
+                const a = chunk.toString().split('\n');
+                console.log(a);
+                let parsnip = JSON.parse(a[0]);
+                console.log(parsnip)
+                resolve(parsnip["Hash"]);
+            });
+        });
+        request.on('error', (error: any) => {
+            console.log(`ERROR: ${JSON.stringify(error)}`)
+            reject();
+        });
+        // Write the binary buffer directly
+        request.write(await formData.buffer());
+        request.end();
+    });
+};
+
 export const pinFile = async (path: any, ipfs_endpoint: string): Promise<string> => {
 
     return new Promise( async (resolve,reject) => {
@@ -318,8 +364,6 @@ export const dagPut = async (note: any, ipfs_endpoint: string): Promise<string> 
         const headers = {
             'Content-Type': `multipart/form-data; boundary=${boundary}`,
         }
-
-        console.log(formData)
 
         const request = net.request({
             method: 'POST',

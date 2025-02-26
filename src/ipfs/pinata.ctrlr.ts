@@ -1,13 +1,11 @@
 import { MainController } from "src/main.ctrlr.js";
 import { calculateIPFSHash, calculateIPFSHashFromContent, upload } from "./pinata.factory.js";
 import * as fs from 'fs';
-//@ts-ignore
-import electron from 'electron';
-const net = electron.remote.net;
+
+import * as https from 'https';
+import * as http from 'http';
 import * as path from 'path';
 import {PinataSDK } from "pinata-web3";
-
-
 
 export class PinataService  {
 
@@ -72,17 +70,23 @@ export class PinataService  {
 
     async fetchUrl(url: string): Promise<{ data: Buffer; contentType?: string }> {
         return new Promise((resolve, reject) => {
+            const protocol = url.startsWith('https:') ? https : http;
             
-            const request = net.request(url);
-            
-            request.on('response', (response: any) => {
-            
+            const request = protocol.get(url, (response: any) => {
                 const contentType = response.headers['content-type'];
+                const chunks: Buffer[] = [];
 
                 response.on('data', (chunk: Buffer) => {
-        
-                    const data = chunk;
+                    chunks.push(chunk);
+                });
+
+                response.on('end', () => {
+                    const data = Buffer.concat(chunks);
                     resolve({ data, contentType });
+                });
+
+                response.on('error', (error: any) => {
+                    reject(error);
                 });
             });
 
@@ -90,7 +94,11 @@ export class PinataService  {
                 reject(error);
             });
 
-            request.end();
+            // Add timeout to prevent hanging
+            request.setTimeout(30000, () => {
+                request.destroy();
+                reject(new Error('Request timed out after 30 seconds'));
+            });
         });
     }
 
@@ -115,8 +123,11 @@ export class PinataService  {
     }
 
     async uploadFileFromUrl(url: string, onlyHash: boolean = false): Promise<string> {
+
         try {
             const { data, contentType: responseMimeType } = await this.fetchUrl(url);
+
+            // console.log(url)
 
             if (onlyHash) {
                 return await calculateIPFSHashFromContent(data.toString('hex'));
@@ -125,11 +136,11 @@ export class PinataService  {
             const fileName = path.basename(url);
             const fileExt = path.extname(url).toLowerCase();
             const contentType = this.getContentType(fileExt, responseMimeType);
-            console.log("contentType:", contentType);
+            // console.log("contentType:", contentType);
 
             const file = new File([data], fileName, { type: contentType });
             const upload = await this.pinata.upload.file(file);
-            console.log("upload:", upload);
+            // console.log("upload:", upload);
             return upload.IpfsHash;
           
         } catch (error) {
@@ -147,6 +158,7 @@ export class PinataService  {
             const fileName = path.basename(filePath);
             const fileExt = path.extname(fileName).toLowerCase();
             const contentType = this.getContentType(fileExt);
+            console.log("contentType before upload:", contentType);
             const file = new File([data], fileName, { type: contentType });
             const upload = await this.pinata.upload.file(file);
             return upload.IpfsHash;

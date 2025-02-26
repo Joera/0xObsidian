@@ -29,7 +29,7 @@ export const calculateIPFSHash = async (filePath: string): Promise<string> => {
 export const calculateIPFSHashFromContent = async (content: string): Promise<string> => {
     return new Promise(async (resolve, reject) => {
         try {
-            const buffer = Buffer.from(content, 'utf-8');
+            const buffer = Buffer.from(content, 'hex');
             const hash = await ipfsHash.of(buffer);
             resolve(hash);
         } catch (error) {
