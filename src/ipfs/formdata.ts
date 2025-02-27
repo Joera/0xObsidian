@@ -65,16 +65,16 @@ export function directoryFormData(sourcePath: string) : Promise<any> {
     });
 }
 
-export function singleFileFormData(note: any) : Promise<any> {
+export function singleFileFormData(filename: string, content: Buffer) : Promise<any> {
 
     return new Promise( async (resolve, reject) => {
 
-        const slug = note.slug || note.name || note.path ||"nft";
+        // const slug = note.slug || note.name || note.path ||"nft";
 
         let data = new Multipart();
         // JSON data is already text, so we can use Buffer.from
-        data.append('file', Buffer.from(JSON.stringify(note)), {
-            'filename': slug + ".json",
+        data.append('file', content, {
+            'filename': filename,
             'contentType': 'application/json'
         });
 

@@ -4,6 +4,7 @@ import electron from 'electron';
 const net = electron.remote.net;
 import Multipart from './multi-part-lite-adopted/main.js';
 import fs from 'fs';
+import path from "path";
 
 
 const fixEndpoint = (endpoint: string) => {
@@ -17,7 +18,7 @@ export const addRecursive = async (sourcePath: string, ipfs_endpoint: string, on
 
         return new Promise( async (resolve,reject) => {
 
-            console.log("addRecursive: " + ipfs_endpoint);
+            // console.log("addRecursive: " + ipfs_endpoint);
 
             const { formData, boundary } = await directoryFormData(sourcePath);
 
@@ -118,7 +119,7 @@ export const addAsFolder = async (assets: any[], ipfs_endpoint: string, onlyHash
 
 export const get = async (cid: string, ipfs_endpoint: string) : Promise<Buffer> => {
 
-    console.log("Getting " + cid);
+    // console.log("Getting " + cid);
 
         return new Promise( async (resolve,reject) => {
     
@@ -188,15 +189,20 @@ export const getRecursive = async (cid: string, ipfs_endpoint: string) : Promise
     });
 }
 
-export const add = async (note: any, ipfs_endpoint: string): Promise<string> => {
+export const add = async (note: any, ipfs_endpoint: string, onlyHash?: boolean): Promise<string> => {
 
     return new Promise( async (resolve,reject) => {
 
-        const { formData, boundary } = await singleFileFormData(note);
+        const noteBuffer = Buffer.from(JSON.stringify(note));
+        const { formData, boundary } = await singleFileFormData(note.slug || note.name || note.path ||"nft", noteBuffer);
 
         const headers = {
             'Content-Type': `multipart/form-data; boundary=${boundary}`,
         }
+
+        const apiPath = onlyHash ? 'api/v0/add?onlyHash=true' : 'api/v0/add';
+
+        // console.log(`https://${fixEndpoint(ipfs_endpoint)}/${apiPath}`);
 
         try {
             const request = net.request({
@@ -204,7 +210,7 @@ export const add = async (note: any, ipfs_endpoint: string): Promise<string> => 
                 protocol: 'https:',
                 hostname: fixEndpoint(ipfs_endpoint),
                 port: 443,
-                path: '/api/v0/add',
+                path: apiPath,
                 headers
             });
 
@@ -212,6 +218,7 @@ export const add = async (note: any, ipfs_endpoint: string): Promise<string> => 
 
                 response.on('data', (chunk: any) => {
                     const a = chunk.toString().split('\n');
+                    // console.log(a);
                     let parsnip = JSON.parse(a[0]);
                     // console.log(parsnip)
                     resolve(parsnip["Hash"]);
@@ -255,9 +262,9 @@ export const addFile = async (path: any, ipfs_endpoint: string): Promise<string>
 
             response.on('data', (chunk: any) => {
                 const a = chunk.toString().split('\n');
-                console.log(a);
+                // console.log(a);
                 let parsnip = JSON.parse(a[0]);
-                console.log(parsnip)
+                // console.log(parsnip)
                 resolve(parsnip["Hash"]);
             });
         });
@@ -275,23 +282,26 @@ export const addFileFromUrl = async (url: any, ipfs_endpoint: string, onlyHash?:
 
     return new Promise( async (resolve,reject) => {
 
-        const content = await fetch(url).then(r => r.arrayBuffer());
+        const arrayBuffer = await fetch(url).then(r => r.arrayBuffer());
+        const content = Buffer.from(arrayBuffer);
 
-        console.log(content);
+        const filename = path.basename(url);
 
-        const formData = await singleFileFormData(content);
+        const { formData, boundary } = await singleFileFormData(filename, content);
 
         const headers = {
-            'Content-Type': `multipart/form-data; boundary=${formData.getBoundary()}`,
+            'Content-Type': `multipart/form-data; boundary=${boundary}`,
         }
 
-        const path = onlyHash ? 'api/v0/add?onlyHash=true' : 'api/v0/add'
+        const apiPath = onlyHash ? 'api/v0/add?onlyHash=true' : 'api/v0/add';
+
+
 
         const request = net.request({
             method: 'POST',
             protocol: 'https:',
             hostname: fixEndpoint(ipfs_endpoint),
-            path,
+            path: apiPath,
             headers
         });
 
@@ -301,9 +311,9 @@ export const addFileFromUrl = async (url: any, ipfs_endpoint: string, onlyHash?:
 
             response.on('data', (chunk: any) => {
                 const a = chunk.toString().split('\n');
-                console.log(a);
+                // console.log(a);
                 let parsnip = JSON.parse(a[0]);
-                console.log(parsnip)
+                // console.log(parsnip)
                 resolve(parsnip["Hash"]);
             });
         });
@@ -312,7 +322,7 @@ export const addFileFromUrl = async (url: any, ipfs_endpoint: string, onlyHash?:
             reject();
         });
         // Write the binary buffer directly
-        request.write(await formData.buffer());
+        request.write(formData);
         request.end();
     });
 };
@@ -341,7 +351,7 @@ export const pinFile = async (path: any, ipfs_endpoint: string): Promise<string>
                 const a = chunk.toString().split('\n');
                 // console.log(a);
                 let parsnip = JSON.parse(a[0]);
-                console.log(parsnip)
+                // console.log(parsnip)
                 resolve(parsnip.cid);
             });
         });
@@ -359,7 +369,8 @@ export const dagPut = async (note: any, ipfs_endpoint: string): Promise<string> 
 
     return new Promise( async (resolve,reject) => {
 
-        const { formData, boundary } = await singleFileFormData(note);
+        const noteBuffer = Buffer.from(JSON.stringify(note));
+        const { formData, boundary } = await singleFileFormData(note.slug || note.name || note.path ||"nft", noteBuffer);
 
         const headers = {
             'Content-Type': `multipart/form-data; boundary=${boundary}`,
@@ -451,7 +462,7 @@ export const addFilesInDir = async (files: string[], ipfs_endpoint: string): Pro
 
             response.on('data', (chunk: any) => {
                 const a = chunk.toString().split('\n').filter( (x: string) => x.length > 0 );
-                console.log(a)
+                // console.log(a)
                 let parsnip = JSON.parse(a[a.length - 1]);
                
                 resolve(parsnip["Hash"]);

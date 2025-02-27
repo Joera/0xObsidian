@@ -6,6 +6,7 @@ import * as https from 'https';
 import * as http from 'http';
 import * as path from 'path';
 import {PinataSDK } from "pinata-web3";
+import { CID } from 'multiformats/cid'
 
 export class PinataService  {
 
@@ -14,6 +15,7 @@ export class PinataService  {
 
     constructor(main: MainController) {
         this.main = main;
+        // console.log("jwt",this.main.plugin.settings.pinata_jwt);
         this.pinata = new PinataSDK({
             pinataJwt: this.main.plugin.settings.pinata_jwt,
             pinataGateway: "neutralpress.mypinata.cloud"
@@ -28,13 +30,15 @@ export class PinataService  {
     uploadFileFromPath = async (filePath: string, onlyHash: boolean = false) => {
 
         if (onlyHash) {
-            return await calculateIPFSHash(filePath);
+            const hash = await calculateIPFSHash(filePath);
+                const v0 = CID.parse(hash);
+                return v0.toV1().toString();
         }
 
         const fileName = path.basename(filePath);
         const fileExt = path.extname(filePath).toLowerCase();
 
-        console.log("fileName", fileName);
+        // console.log("fileName", fileName);
 
         let contentType = 'text/plain';
         switch (fileExt) {
@@ -53,7 +57,7 @@ export class PinataService  {
                 break;
         }
 
-        console.log("contentType", contentType);
+        // console.log("contentType", contentType);
 
         try {
 
@@ -72,7 +76,16 @@ export class PinataService  {
         return new Promise((resolve, reject) => {
             const protocol = url.startsWith('https:') ? https : http;
             
-            const request = protocol.get(url, (response: any) => {
+            // For GitHub CSS files, we need to set proper headers
+            const options: any = {};
+            if (url.includes('raw.githubusercontent.com') && url.endsWith('.css')) {
+                options.headers = {
+                    'Accept': 'text/css,*/*;q=0.1',  // Prefer CSS content type
+                    'User-Agent': 'Mozilla/5.0'  // GitHub requires a user agent
+                };
+            }
+            
+            const request = protocol.get(url, options, (response: any) => {
                 const contentType = response.headers['content-type'];
                 const chunks: Buffer[] = [];
 
@@ -82,7 +95,17 @@ export class PinataService  {
 
                 response.on('end', () => {
                     const data = Buffer.concat(chunks);
-                    resolve({ data, contentType });
+                    
+                    // For GitHub raw content, if it's a CSS file but served as text/plain,
+                    // override the content type
+                    let finalContentType = contentType;
+                    if (url.includes('raw.githubusercontent.com') && 
+                        url.endsWith('.css') && 
+                        contentType?.includes('text/plain')) {
+                        finalContentType = 'text/css';
+                    }
+                    
+                    resolve({ data, contentType: finalContentType });
                 });
 
                 response.on('error', (error: any) => {
@@ -103,23 +126,44 @@ export class PinataService  {
     }
 
     getContentType(fileExt: string, mimeType?: string): string {
-        // If we have a mime type from response headers, use that
-        if (mimeType) return mimeType;
+        // Get content type based on file extension
+        const getExtensionType = (ext: string): string => {
+            switch (ext.toLowerCase()) {
+                case '.css':
+                    return 'text/css';
+                case '.jpg':
+                case '.jpeg':
+                    return 'image/jpeg';
+                case '.png':
+                    return 'image/png';
+                case '.gif':
+                    return 'image/gif';
+                case '.svg':
+                    return 'image/svg+xml';
+                case '.webp':
+                    return 'image/webp';
+                case '.html':
+                    return 'text/html';
+                case '.js':
+                    return 'application/javascript';
+                case '.json':
+                    return 'application/json';
+                case '.txt':
+                    return 'text/plain';
+                default:
+                    return 'application/octet-stream';
+            }
+        };
 
-        // Fallback to extension-based detection
-        switch (fileExt) {
-            case '.css':
-                return 'text/css';
-            case '.jpg':
-            case '.jpeg':
-                return 'image/jpeg';
-            case '.png':
-                return 'image/png';
-            case '.gif':
-                return 'image/gif';
-            default:
-                return 'application/octet-stream'; // safer default for unknown types
+        const extensionType = getExtensionType(fileExt);
+        
+        // If we have a file extension type, use that instead of mimeType
+        if (extensionType !== 'application/octet-stream') {
+            return extensionType;
         }
+
+        // If no specific extension type, fallback to mimeType or default
+        return mimeType || 'application/octet-stream';
     }
 
     async uploadFileFromUrl(url: string, onlyHash: boolean = false): Promise<string> {
@@ -127,20 +171,28 @@ export class PinataService  {
         try {
             const { data, contentType: responseMimeType } = await this.fetchUrl(url);
 
-            // console.log(url)
-
-            if (onlyHash) {
-                return await calculateIPFSHashFromContent(data.toString('hex'));
-            }
+            console.log("responseMimeType:", responseMimeType);
 
             const fileName = path.basename(url);
             const fileExt = path.extname(url).toLowerCase();
+            console.log("fileExt:", fileExt);
             const contentType = this.getContentType(fileExt, responseMimeType);
-            // console.log("contentType:", contentType);
+            
 
+            if (onlyHash) {
+                // console.log("onlyHash data length:", data.length);
+                const hash = await calculateIPFSHashFromContent(data, fileName, contentType);
+                const v0 = CID.parse(hash);
+                return v0.toV1().toString();
+            }
+
+            console.log("uploading with contentType:", contentType);
+
+            // console.log("upload data length:", data.length);
             const file = new File([data], fileName, { type: contentType });
+            // console.log("upload file size:", file.size);
             const upload = await this.pinata.upload.file(file);
-            // console.log("upload:", upload);
+            console.log("cid from upload:", upload.IpfsHash);
             return upload.IpfsHash;
           
         } catch (error) {
@@ -152,14 +204,19 @@ export class PinataService  {
     async uploadFileFromContent(filePath: string, data: string, onlyHash: boolean = false): Promise<string> {
         try {
             if (onlyHash) {
-                return await calculateIPFSHashFromContent(data);
+                console.log("onlyHash data length:", data.length);
+                const hash = await calculateIPFSHashFromContent(data);
+                const v0 = CID.parse(hash);
+                return v0.toV1().toString();
             }
 
+            console.log("upload data length:", data.length);
             const fileName = path.basename(filePath);
             const fileExt = path.extname(fileName).toLowerCase();
             const contentType = this.getContentType(fileExt);
             console.log("contentType before upload:", contentType);
             const file = new File([data], fileName, { type: contentType });
+            console.log("upload file size:", file.size);
             const upload = await this.pinata.upload.file(file);
             return upload.IpfsHash;
 

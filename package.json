@@ -36,6 +36,7 @@
 		"@safe-global/safe-core-sdk-types": "^5.1.0",
 		"@useorbis/db-sdk": "^0.0.60-alpha",
 		"base-path-converter": "^1.0.2",
+		"blockstore-core": "^5.0.2",
 		"dotenv": "^16.4.5",
 		"ethers": "^6.12.1",
 		"ipfs-car": "^2.0.0",
