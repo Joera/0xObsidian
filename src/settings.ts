@@ -4,6 +4,7 @@ import OxO from "./main.js";
 import { IOXOUser } from "./user/user.js";
 import { IInvite, IUpdate } from "./types/oxo.js";
 import { Wallet } from "ethers";
+import { PKPNameModal } from "./ui/pkp-name.modal.js"; // Import the PKPNameModal
 
 export interface IOxOSettings {
 	authors: IOXOUser[],
@@ -109,12 +110,12 @@ export class OxOAuthorsTab extends PluginSettingTab {
 					.setValue(author.eoa)
 				);
 
-			new Setting(authorEl)
-				.setName('MSCA')
-				.setDesc('The address for the modular smart account that operates for you on chain')
-				.addText(text => text
-					.setValue(author.msca || "")
-				);
+			// new Setting(authorEl)
+			// 	.setName('MSCA')
+			// 	.setDesc('The address for the modular smart account that operates for you on chain')
+			// 	.addText(text => text
+			// 		.setValue(author.msca || "")
+			// 	);
 
 			new Setting(authorEl)
 				.setName('SAFE')
@@ -123,7 +124,34 @@ export class OxOAuthorsTab extends PluginSettingTab {
 					.setValue(author.safe || "")
 				);
 
-			
+			for (let pkp of author.pkps) {
+				
+				new Setting(authorEl)
+					.setName('PKP')
+					.setDesc('Programmable Key Pair ')
+					.addText(text => text
+						.setValue(pkp.name || pkp.publicKey)
+					);
+			}
+
+			new Setting(authorEl)
+				.setName('Mint new PKP')
+				.setDesc('Create a new Programmable Key Pair owned by your Safe')
+				.addButton(button => button
+					.setButtonText('Mint')
+					.onClick(async () => {
+						try {
+							// Show modal to get PKP name
+							new PKPNameModal(this.app, this.plugin.ctrlr, async (name) => {
+								await this.plugin.ctrlr.mintPKP(name);
+								this.display();
+							}).open();
+						} catch (error) {
+							console.error('Error minting PKP:', error);
+							// You might want to show this error to the user in a more friendly way
+						}
+					})
+				);
 
 			new Setting(authorEl)
 				.setName('Active')

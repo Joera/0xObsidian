@@ -29,7 +29,7 @@ export class PinataService  {
 
     uploadFileFromPath = async (filePath: string, onlyHash: boolean = false) => {
 
-        if (onlyHash) {
+        if (onlyHash) { 
             const hash = await calculateIPFSHash(filePath);
                 const v0 = CID.parse(hash);
                 return v0.toV1().toString();
@@ -38,7 +38,7 @@ export class PinataService  {
         const fileName = path.basename(filePath);
         const fileExt = path.extname(filePath).toLowerCase();
 
-        // console.log("fileName", fileName);
+        console.log(0);
 
         let contentType = 'text/plain';
         switch (fileExt) {
@@ -61,12 +61,16 @@ export class PinataService  {
 
         try {
 
+            console.log(1);
+
           const blob = new Blob([fs.readFileSync(filePath)]);
           const file = new File([blob], fileName, { type: contentType });
           const upload = await this.pinata.upload.file(file);
+          console.log(2);
           return upload.IpfsHash;
       
         } catch (error) {
+          console.log(3);
           console.log(error);
           return "QmUrU11u74YrLbj9d1Z9JvPPZ2nXmgMVTgh2ZvjrTUc4ZQ";
         }

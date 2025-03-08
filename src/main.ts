@@ -70,6 +70,16 @@ export default class OxO extends Plugin {
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 
+		// Ensure each author has pkps initialized
+		if (this.settings.authors) {
+			this.settings.authors = this.settings.authors.map(author => {
+				if (!author.pkps) {
+					author.pkps = [];
+				}
+				return author;
+			});
+		}
+
 		this.authorsTab = new OxOAuthorsTab(this.app, this);
 		this.addSettingTab(this.authorsTab);
 

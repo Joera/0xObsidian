@@ -9,6 +9,9 @@ import { IpfsCtrlr, ipfsController } from "./ipfs/ipfs.ctrlr.js";
 import { ISafeService, SafeService } from "./eth/safe_service.js";
 import { IOrbisService, OrbisService } from "./orbis/orbis.service.js";
 import { PinataService } from "./ipfs/pinata.ctrlr.js";
+import { LitService } from "./lit/lit.service.js"
+import { AUTH_METHOD_SCOPE, AUTH_METHOD_TYPE, LIT_ABILITY } from '@lit-protocol/constants';
+import { LitActionResource } from "@lit-protocol/auth-helpers";
 // import { IPodService, PodService } from "./pod/pod.service.js";
 
 const basePath = (app.vault.adapter as any).basePath
@@ -26,13 +29,14 @@ export interface IMainController {
     safe: ISafeService;
     // pod: IPodService;
     ipfs: IpfsCtrlr,
-    // lit: ILitService,
+    lit: any,
     orbis: IOrbisService;
     plugin: OxO,    
     // pods: {[key: string]: IPod }
     init: () => Promise<void>
     newAuthor: () => Promise<void>
     toggleAuthor: (user: IOXOUser) => Promise<void>
+    mintPKP: (customName?: string) => Promise<void>
 }
 
 export class MainController implements IMainController { 
@@ -42,6 +46,7 @@ export class MainController implements IMainController {
     msca!: IMSCAService;;
     safe!: ISafeService;
     ipfs!: IpfsCtrlr;
+    lit!: any;
     pinata!: PinataService;
     // lit!: ILitService;
     orbis!: IOrbisService;
@@ -71,6 +76,7 @@ export class MainController implements IMainController {
         this.msca = new MSCAService(this);
         this.safe = new SafeService(this);
         this.orbis = new OrbisService(this);
+        this.lit = new LitService(this);
     
         await this.safe.setActiveRelay('BASE_SEPOLIA', this.user.eoa);
 
@@ -122,8 +128,28 @@ export class MainController implements IMainController {
             this.safe.setActiveRelay('BASE_SEPOLIA', this.user.eoa);
         } 
     }
+
+    async mintPKP(customName?: string): Promise<void> {
+        try {
+            console.log('Starting PKP minting process...');
+            console.log('Safe address:', await this.safe.address);
+
+            // Get auth signature without any specific abilities for minting
+            console.log('Getting auth signature...');
+            const mintInfo = await this.lit.mintPKP();
+            console.log('PKP minted successfully:', mintInfo);
+            
+            // Add PKP to user with custom name or default
+            const pkpName = customName || `PKP-${this.user.pkps.length + 1}`;
+            console.log('Adding PKP to user with name:', pkpName);
+            this.user.addPKP(pkpName, mintInfo.pkp.tokenId, mintInfo.pkp.publicKey);
+
+            // Save the updated user data
+            await this.plugin.saveSettings();
+            
+        } catch (error) {
+            console.error('Error in PKP minting process:', error);
+            throw error;
+        }
+    }
 }
-
-
-
-
