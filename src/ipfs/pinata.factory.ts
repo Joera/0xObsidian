@@ -12,7 +12,7 @@ export const calculateIPFSHash = async (filePath: string): Promise<string> => {
     return new Promise(async (resolve, reject) => {
         try {
             const fileStream = fs.createReadStream(filePath);
-            const chunks = [];
+            const chunks: Buffer[] = [];
             
             for await (const chunk of fileStream) {
                 chunks.push(chunk);

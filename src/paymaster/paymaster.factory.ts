@@ -4,7 +4,7 @@ export const paymasterAddress = (chain: string) => {
     
     switch(chain) {
         case 'BASE_SEPOLIA':
-            return '0x0973c724e3300783526c76B407a32Fa15Cf97e5b'
+            return '    '
         case 'ARB_SEPOLIA':
             return '0x4Db923a131CF391f56875a9eF16422639EFA6d4b'
     }

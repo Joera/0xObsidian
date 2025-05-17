@@ -1,5 +1,6 @@
 import { IMainController } from "src/main.ctrlr.js";
-import { ethers, Wallet } from "ethers";
+import { ethers} from "ethers";
+import { Wallet } from "ethers/wallet";
 
 export interface IPKPInfo {
     name: string;
@@ -30,22 +31,23 @@ export class OXOUser implements IOXOUser {
     safe: string | undefined
     pkps: IPKPInfo[] = []
 
-    constructor(name: string, active: boolean, private_key: string | undefined, eoa: string | undefined, msca: string | undefined, safe: string | undefined) {
+    constructor(name: string, active: boolean, private_key: string | undefined, eoa: string | undefined, msca: string | undefined, safe: string | undefined, pkps: IPKPInfo[] | undefined) {
 
         if(private_key == undefined) {
             private_key = this._generatePK();
         }
 
         if (eoa == undefined) {
-            eoa = this.__address(private_key);
+            eoa = this.__address(private_key || '');
         }
 
         this.name = name;
         this.active = active;
-        this.eoa = eoa;
-        this.private_key = private_key;
+        this.eoa = eoa || "";
+        this.private_key = private_key || "";
         this.msca = msca != undefined ? ethers.getAddress(msca) : undefined;   
-        this.safe = safe != undefined ? ethers.getAddress(safe) : undefined;      
+        this.safe = safe != undefined ? ethers.getAddress(safe) : undefined;   
+        this.pkps = pkps != undefined ? pkps : [];   
     }
 
     async deployMSCA(main: IMainController) {
@@ -68,5 +70,6 @@ export class OXOUser implements IOXOUser {
 
     addPKP(name: string, tokenId: string, publicKey: string) {
         this.pkps.push({ name, tokenId, publicKey });
+        console.log(this);
     }
 }

@@ -50,6 +50,8 @@ export class OrbisService implements IOrbisService {
     }
 
     async insert(contentItem: any, model: string, context?: string) {
+
+        // console.log("model: ", model);
         
         try {
             if (!this.sdk?.ceramic) {
@@ -95,13 +97,14 @@ export class OrbisService implements IOrbisService {
 
         try {
             const result = await updateStatement.run();
-            console.log(result);
+            console.log("orbis_update_result: ", result);
             return result;
         } catch (error) {
             console.error('Error during update operation:', error);
             throw error;
         }
     }
+
 
     async createModel(modelDefinition: any) {
         try {

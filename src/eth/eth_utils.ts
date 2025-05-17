@@ -1,6 +1,6 @@
-import { Provider } from "ethers";
+import { JsonRpcProvider } from "ethers/providers";
 
-export const blockTime = async (block_number: string, provider: Provider) : Promise<string> =>  {
+export const blockTime = async (block_number: string, provider: JsonRpcProvider) : Promise<string> =>  {
 
     const block = await provider.getBlock(block_number);
     if (block != null) {

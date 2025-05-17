@@ -1,21 +1,17 @@
-const hre = require("hardhat");
-// const AF  = require("../ignition/modules/AccountFactory");
-// const PM  = require("../ignition/modules/Paymaster");
-// const EP = require("../ignition/modules/EntryPoint");
-
+import { ethers } from "hardhat";
 
 async function main() {
-    // const af = await hre.ethers.deployContract("AccountFactory");
-    // await af.waitForDeployment();
-    // console.log(`AF deployed to ${af.target}`);
-    const pod = await hre.ethers.deployContract("PodFactory");
-    await pod.waitForDeployment();
-    console.log(`PODFACTORY deployed to ${pod.target}`);
+  const NFTtest = await ethers.getContractFactory("NFTtest");
+  const nftTest = await NFTtest.deploy();
+  await nftTest.waitForDeployment();
 
-  }
-  
-  main().catch((error) => {
+  const deployedAddress = await nftTest.getAddress();
+  console.log("NFTtest deployed to:", deployedAddress);
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
     console.error(error);
-    process.exitCode = 1;
+    process.exit(1);
   });
-

@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 
-export const getProvider = (chain: string = 'BASE_SEPOLIA', alchemy_key: string) => {
+export const getProvider = (chain: string = 'BASE_SEPOLIA', alchemy_key?: string) => {
 
     let provider;
 
@@ -9,6 +9,16 @@ export const getProvider = (chain: string = 'BASE_SEPOLIA', alchemy_key: string)
         case 'ETH_MAINNET':
             provider = ethers.getDefaultProvider(
                 "https://eth-mainnet.g.alchemy.com/v2/" + alchemy_key ,
+                {
+                    alchemy: alchemy_key 
+                }
+            );
+            break;
+
+        case 'SEPOLIA': 
+            console.log("https://eth-sepolia.g.alchemy.com/v2/" + alchemy_key);
+            provider = ethers.getDefaultProvider(
+                "https://eth-sepolia.g.alchemy.com/v2/" + alchemy_key ,
                 {
                     alchemy: alchemy_key 
                 }
@@ -25,11 +35,24 @@ export const getProvider = (chain: string = 'BASE_SEPOLIA', alchemy_key: string)
             break;
 
         case 'BASE_SEPOLIA':
+            console.log("https://base-sepolia.g.alchemy.com/v2/" + alchemy_key);
             provider = ethers.getDefaultProvider(
                 "https://base-sepolia.g.alchemy.com/v2/" + alchemy_key ,       
                 {
                     alchemy: alchemy_key
                 }
+            )
+            break;
+
+        case 'GNOSIS_CHAIN':
+            provider = ethers.getDefaultProvider(
+                "https://rpc.gnosischain.com" // https://rpc.gnosis.gateway.fm
+            )
+            break;
+
+        case 'CRONICLE_YELLOWSTONE':
+            provider = ethers.getDefaultProvider(
+                "https://yellowstone-rpc.litprotocol.com/"
             )
             break;
 
@@ -53,6 +76,10 @@ export const getRPC = (chain: string, alchemy_key: string): string => {
 
         case 'ETH_MAINNET':
             rpc = `https://eth-mainnet.g.alchemy.com/v2/${alchemy_key}`;
+            break;
+
+        case 'SEPOLIA':
+            rpc = `https://eth-sepolia.g.alchemy.com/v2/${alchemy_key}`;
             break;
 
         case 'ARB_SEPOLIA': 

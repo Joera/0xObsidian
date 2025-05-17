@@ -2,6 +2,7 @@ import { Plugin, SettingTab } from 'obsidian';
 import { DEFAULT_SETTINGS, IOxOSettings, OxOAuthorsTab } from './settings.js';
 import { IMainController, MainController } from './main.ctrlr.js';
 
+
 // Use Node.js require to access native modules
 const { Buffer } = require('buffer');
 const { TextEncoder, TextDecoder } = require('util');
@@ -16,7 +17,6 @@ if (typeof window !== 'undefined') {
 export default class OxO extends Plugin {
 	settings!: IOxOSettings;
 	authorsTab!: SettingTab;
-	updatesTab!: SettingTab;
 	ctrlr!: IMainController;
 
 	async onload() {
@@ -24,43 +24,8 @@ export default class OxO extends Plugin {
 		this.ctrlr = new MainController(this);
 		await this.ctrlr.init();
 
-		this.registerEvent(
-			this.app.workspace.on("file-menu", (menu, file: any) => {
-
-				if (file.children && file.children.length > 0) {
-
-					// menu.addItem((item) => {
-					// 	item
-					// 	.setTitle("Create pod")
-					// 	.setIcon("document")
-					// 	.onClick(() => { 
-					// 		this.ctrlr.newPod(file.path)
-					// 	})
-					// });
-
-					// menu.addItem((item) => {
-					// 	item
-					// 	.setTitle("Update pod")
-					// 	.setIcon("document")
-					// 	.onClick(() => { 
-					// 		this.ctrlr.updatePod(file.path)
-					// 	})
-					// });
-
-					// menu.addItem((item) => {
-					// 	item
-					// 	.setTitle("Invite")
-					// 	.setIcon("document")
-					// 	.onClick(() => { 
-					// 		new InvitationModal(this.app,this.ctrlr, file.path).open();
-					// 	})
-					// });
-				}
-			})
-		);
-
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+	//	this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
 	onunload() {
@@ -69,7 +34,7 @@ export default class OxO extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-
+	
 		// Ensure each author has pkps initialized
 		if (this.settings.authors) {
 			this.settings.authors = this.settings.authors.map(author => {
@@ -82,13 +47,6 @@ export default class OxO extends Plugin {
 
 		this.authorsTab = new OxOAuthorsTab(this.app, this);
 		this.addSettingTab(this.authorsTab);
-
-		// for (let [key, value] of Object.entries(this.settings.updates)) {
-			
-		// 	this.updatesTab = new OxOUpdatesTab(this.app, this, key, value);
-		// 	this.addSettingTab(this.updatesTab);
-
-		// }
 	}
 
 	async clearSettings() {

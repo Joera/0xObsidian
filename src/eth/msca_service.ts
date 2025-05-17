@@ -1,4 +1,8 @@
-import { ethers, Signer, Provider, Contract, Wallet } from "ethers";
+import { ethers } from "ethers";
+import { Contract } from "ethers/contract";
+import { Wallet } from "ethers/wallet";
+import { JsonRpcProvider } from "ethers/providers";
+import type { JsonRpcSigner } from "ethers/providers";
 import { ACCOUNT_FACTORY_ADDRESS  } from "./constants.js";
 
 // Add type interface for contract artifacts
@@ -11,9 +15,9 @@ interface ContractArtifact {
     deployedBytecode: string;
 }
 
-import ep from '../../contracts/EntryPoint.json' assert { type: 'json' };
-import af from '../../contracts/AccountFactory.json' assert { type: 'json' };
-import ac from '../../contracts/ModularAccount.json' assert { type: 'json' }; // default from alchemy
+import ep from '../../contracts/EntryPoint.json' with { type: 'json' };
+import af from '../../contracts/AccountFactory.json' with { type: 'json' };
+import ac from '../../contracts/ModularAccount.json' with { type: 'json' }; // default from alchemy
 
 // Type assertions for the contract artifacts
 const entryPointArtifact = ep as ContractArtifact;
@@ -31,9 +35,9 @@ import { ENTRYPOINT_ADDRESS } from "src/paymaster/constants.js";
 export interface IMSCAService {
 
     main: IMainController;
-    signer: Signer;
-    provider: Provider;
-    ensProvider: Provider;
+    signer: JsonRpcSigner;
+    provider: JsonRpcProvider;
+    ensProvider: JsonRpcProvider;
     accountFactory: Contract;
     entrypoint: Contract;
     smartAccount: Contract;
@@ -50,9 +54,9 @@ export interface IMSCAService {
 export class MSCAService implements IMSCAService {
     
     main: IMainController;
-    signer!: Signer;
-    provider!: Provider;
-    ensProvider!: Provider;
+    signer!: JsonRpcSigner;
+    provider!: JsonRpcProvider;
+    ensProvider!: JsonRpcProvider;
     accountFactory!: Contract;
     entrypoint!: Contract;
     smartAccount!: Contract;
@@ -149,7 +153,7 @@ export class MSCAService implements IMSCAService {
             const { initCode, msca } = await create_init_code(this);
             this.loadSmartAccount(msca);
 
-            console.log(initCode);
+            // console.log(initCode);
 
             const contract = new ethers.Contract(address, abi, this.signer);
             const callData = contract.interface.encodeFunctionData(method, args);   
