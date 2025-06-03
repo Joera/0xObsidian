@@ -2,9 +2,11 @@ import { directoryFormData, singleFileFormData, singleFileFormDataFromPath, dire
 //@ts-ignore
 import electron from 'electron';
 const net = electron.remote.net;
+import * as https from 'https';
 import Multipart from './multi-part-lite-adopted/main.js';
 import fs from 'fs';
 import path from "path";
+
 
 
 const fixEndpoint = (endpoint: string) => {
@@ -116,48 +118,65 @@ export const addAsFolder = async (assets: any[], ipfs_endpoint: string, onlyHash
 
 }   
 
+export const getJsonLike = async (cid: string, ipfs_endpoint: string): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let resolved = false;
 
-export const get = async (cid: string, ipfs_endpoint: string) : Promise<Buffer> => {
+    const headers = {
+      // No need for JSON content type; IPFS get returns raw data
+    };
 
-    // console.log("Getting " + cid);
+    const request = https.request({
+      method: 'POST',
+      protocol: 'https:',
+      hostname: fixEndpoint(ipfs_endpoint),
+      path: `/api/v0/cat?arg=${cid}`,
+      headers,
+    });
 
-        return new Promise( async (resolve,reject) => {
-    
-            const headers = {
-                'Content-Type': `application/json`,
-            }
-    
-            const request = net.request({
-                method: 'POST',
-                protocol: 'https:',
-                hostname: fixEndpoint(ipfs_endpoint),
-                path: `/api/v0/get?arg=${cid}`,
-                headers
-            });
+    request.on('response', (response) => {
+      response.on('data', (chunk) => {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      });
 
-            request.on('response', (response: any) => {
-                response.on('data', (chunk: any) => {
-                    const nodeBuffer = Buffer.from(chunk);
-                    const configContent = nodeBuffer.toString();
-                    const jsonStart = configContent.indexOf('{');
-                    const jsonEnd = configContent.lastIndexOf('}') + 1;
-                    if (jsonStart >= 0 && jsonEnd > jsonStart) {
-                        const cleanConfigContent = configContent.slice(jsonStart, jsonEnd);
-                        const parsedConfig = JSON.parse(cleanConfigContent);
-                        resolve(parsedConfig);
-                    } else {
-                        reject();
-                    } 
-                });
-            });
+      response.on('end', () => {
+        if (!resolved) {
+          resolved = true;
+          const buffer = Buffer.concat(chunks);
+          const text = buffer.toString('utf-8'); // Convert buffer to string
+          resolve(JSON.parse(text));  
+        }
+      });
 
-            request.on('error', (error: any) => {
-                console.log(`ERROR: ${JSON.stringify(error)}`)
-                reject();
-            });
-            request.end();
-        });
-    }
+      response.on('aborted', () => {
+        console.log("aborted");
+        if (!resolved) {
+          resolved = true;
+          reject(new Error('Response aborted'));
+        }
+      });
+
+      response.on('error', (err) => {
+        console.log("error");
+        if (!resolved) {
+          resolved = true;
+          reject(err);
+        }
+      });
+    });
+
+    request.on('error', (error) => {
+      if (!resolved) {
+        resolved = true;
+        reject(error);
+      }
+    });
+
+    request.end();
+  });
+};
+
 
 export const getRecursive = async (cid: string, ipfs_endpoint: string) : Promise<Buffer> => {
 

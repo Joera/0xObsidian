@@ -110,3 +110,4 @@ export const upload = async(main: MainController, filePath: string, onlyHash: bo
         throw error;
     }
 };
+

@@ -1,4 +1,4 @@
-import { dagGet, dagPut, add, addRecursive, getRecursive, get, addFilesInDir, addFile, pinFile, addAsFolder, addFileFromUrl } from './remotekubo.service.js'; 
+import { dagGet, dagPut, add, addRecursive, getRecursive, getJsonLike, addFilesInDir, addFile, pinFile, addAsFolder, addFileFromUrl } from './remotekubo.service.js'; 
 
 export interface IpfsCtrlr {
 
@@ -11,7 +11,7 @@ export interface IpfsCtrlr {
     dagGet: (cid: string, ipfs_endpoint: string) => Promise<string>,
     dagPut: (note: string, ipfs_endpoint: string) => Promise<string>,
     getRecursive: (cid: string, ipfs_endpoint: string) => Promise<Buffer>,
-    get: (cid: string, ipfs_endpoint: string) => Promise<Buffer>,
+    getJsonLike: (cid: string, ipfs_endpoint: string) => Promise<Buffer>,
     pinFile: (cid: string, ipfs_endpoint: string) => Promise<string>
 }
 
@@ -25,7 +25,7 @@ export const ipfsController: IpfsCtrlr = {
     addAsFolder,
     dagGet,
     dagPut,
-    get,
+    getJsonLike,
     getRecursive,
     pinFile
 

@@ -64,8 +64,10 @@ export class MainController implements IMainController {
         this.pinata = new PinataService(this);
         this.orbis = new OrbisService(this);
         this.lit = new LitService(this);
-        // this.lit.init();    
-        this.orbis.initialize("6b985b50294ac9d06b42629931cdb5e0641fda4128ccaafe22beccce859473e3");
+
+        if (activeUser != undefined && activeUser.safe != undefined) {
+            this.orbis.initialize(activeUser.private_key, activeUser.safe);
+        }
     }
 
     async initChains(chains: string[]) {

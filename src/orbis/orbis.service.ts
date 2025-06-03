@@ -5,7 +5,7 @@ import { IMainController } from "src/main.ctrlr.js";
 
 export interface IOrbisService {
     sdk: OrbisDB;
-    initialize(privateKey: string): Promise<void>;
+    initialize(privateKey: string, safeAddress: string): Promise<void>;
     insert(contentItem: any, model: string, context?: string): Promise<any>;
     update(contentItem: any, rowId: string): Promise<any>;
     createModel(modelDefinition: any): Promise<any>;
@@ -20,7 +20,7 @@ export class OrbisService implements IOrbisService {
         this.main = main;
     }
 
-    async initialize(privateKey: string) {
+    async initialize(privateKey: string, safeAddress: string) {
         try {
             this.sdk = new OrbisDB({
                 ceramic: {
@@ -34,11 +34,19 @@ export class OrbisService implements IOrbisService {
             const provider = new ethers.Wallet(privateKey) as unknown as IEVMProvider;
             const auth = new OrbisEVMAuth(provider);
 
+            console.log(auth);
+
             const authResult: OrbisConnectResult = await this.sdk.connectUser({ auth });
             
             if (!authResult) {
                 throw new Error('Failed to authenticate with Orbis');
             }
+
+            // console.log(authResult);
+
+            // authResult.user.did = `did:pkh:eip155:1:${safeAddress}`;
+
+            // console.log(authResult.user);
 
             this.isAuthenticated = true;
             console.log('Orbis authentication successful:', authResult);

@@ -65,6 +65,9 @@ importers:
       form-data:
         specifier: ^4.0.2
         version: 4.0.2
+      https:
+        specifier: ^1.0.0
+        version: 1.0.0
       ipfs-car:
         specifier: ^2.0.0
         version: 2.0.0
@@ -2673,6 +2676,9 @@ packages:
 
   http-https@1.0.0:
     resolution: {integrity: sha512-o0PWwVCSp3O0wS6FvNr6xfBCHgt0m1tvPLFOCc2iFDKTRAXhB7m8klDf7ErowFH8POa6dVdGatKU5I1YYwzUyg==}
+
+  https@1.0.0:
+    resolution: {integrity: sha512-4EC57ddXrkaF0x83Oj8sM6SLQHAWXw90Skqu2M4AEWENZ3F02dFJE/GARA8igO79tcgYqGrD7ae4f5L3um2lgg==}
 
   idb-keyval@6.2.1:
     resolution: {integrity: sha512-8Sb3veuYCyrZL+VBt9LJfZjLUPWVvqn8tG28VqYNFCo43KHcKuq+b4EiXGeuaLAQWL2YmyDgMp2aSpH9JHsEQg==}
@@ -8445,6 +8451,8 @@ snapshots:
       lru-cache: 6.0.0
 
   http-https@1.0.0: {}
+
+  https@1.0.0: {}
 
   idb-keyval@6.2.1: {}
 

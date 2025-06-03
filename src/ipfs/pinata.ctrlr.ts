@@ -1,12 +1,13 @@
 import { MainController } from "src/main.ctrlr.js";
 import { calculateIPFSHash, calculateIPFSHashFromContent, upload } from "./pinata.factory.js";
 import * as fs from 'fs';
-
+import * as os from 'os';
 import * as https from 'https';
 import * as http from 'http';
 import * as path from 'path';
 import {PinataSDK } from "pinata-web3";
-import { CID } from 'multiformats/cid'
+import { CID } from 'multiformats/cid';
+import { Readable } from 'stream';
 
 export class PinataService  {
 
@@ -162,33 +163,61 @@ export class PinataService  {
         return mimeType || 'application/octet-stream';
     }
 
-    async uploadFileFromUrl(url: string, onlyHash: boolean = false): Promise<string> {
-
+    async uploadFileFromUrl(url: string, onlyHash: boolean = false, cid_version: number = 0): Promise<string> {
         try {
             const { data, contentType: responseMimeType } = await this.fetchUrl(url);
-
-            // console.log("responseMimeType:", responseMimeType);
-
             const fileName = path.basename(url);
             const fileExt = path.extname(url).toLowerCase();
-            // console.log("fileExt:", fileExt);
             const contentType = this.getContentType(fileExt, responseMimeType);
             
             if (onlyHash) {
-                // console.log("onlyHash data length:", data.length);
                 const hash = await calculateIPFSHashFromContent(data, fileName, contentType);
-                const v0 = CID.parse(hash);
-                return v0.toV1().toString();
+                const cid = CID.parse(hash);
+                return cid_version === 0 ? hash : cid.toV1().toString();
             }
 
-            // console.log("uploading with contentType:", contentType);
+            // Create a temporary file and ensure data is a Buffer
+            const tmpFile = path.join(os.tmpdir(), fileName);
+            const buffer = Buffer.from(data);
+            await fs.promises.writeFile(tmpFile, buffer);
 
-            // console.log("upload data length:", data.length);
-            const file = new File([data], fileName, { type: contentType });
-            // console.log("upload file size:", file.size);
-            const upload = await this.pinata.upload.file(file);
-            // console.log("cid from upload:", upload.IpfsHash);
-            return upload.IpfsHash;
+            try {
+                // Use the raw upload function that we know works
+                const formData = new FormData();
+                formData.append('file', new Blob([buffer], { type: contentType }), fileName);
+
+                // Make direct request to Pinata API
+                const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.main.plugin.settings.pinata_jwt}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Pinata upload failed: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log("hash", result.IpfsHash);
+
+                // The hash should already be in CIDv0 format (Qm...)
+                if (cid_version === 0) {
+                    return result.IpfsHash;
+                } else {
+                    // Convert to v1 if requested
+                    const cid = CID.parse(result.IpfsHash);
+                    return cid.toV1().toString();
+                }
+            } finally {
+                // Clean up the temporary file
+                try {
+                    await fs.promises.unlink(tmpFile);
+                } catch (cleanupError) {
+                    console.error('Error cleaning up temp file:', cleanupError);
+                }
+            }
           
         } catch (error) {
             console.error('Error uploading file from URL:', error);
