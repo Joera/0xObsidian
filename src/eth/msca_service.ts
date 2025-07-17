@@ -35,7 +35,7 @@ import { ENTRYPOINT_ADDRESS } from "src/paymaster/constants.js";
 export interface IMSCAService {
 
     main: IMainController;
-    signer: JsonRpcSigner;
+    signer: Wallet;
     provider: JsonRpcProvider;
     ensProvider: JsonRpcProvider;
     accountFactory: Contract;
@@ -54,7 +54,7 @@ export interface IMSCAService {
 export class MSCAService implements IMSCAService {
     
     main: IMainController;
-    signer!: JsonRpcSigner;
+    signer!: Wallet;
     provider!: JsonRpcProvider;
     ensProvider!: JsonRpcProvider;
     accountFactory!: Contract;

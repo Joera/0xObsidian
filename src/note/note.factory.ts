@@ -157,7 +157,7 @@ export const saveRootDirectly = async (cid: string , url: string, pubName: strin
 			frontmatter["archive"] = cid;
 		})
 	} else {
-		throw Error("cfailed to include archive in publication")
+		throw Error("failed to include archive in publication")
 	}
 
 	return [cid, url];

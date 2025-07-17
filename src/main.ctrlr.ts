@@ -29,6 +29,7 @@ export interface IMainController {
     initChain: (chain: string) => Promise<void>
     newAuthor: () => Promise<void>
     toggleAuthor: (user: IOXOUser) => Promise<void>
+    fixThumbnails: (markdownDir: string, imageBaseDir: string, maxFiles?: number) => Promise<void>
 }
 
 export class MainController implements IMainController { 
@@ -167,4 +168,115 @@ export class MainController implements IMainController {
     //         throw error;
     //     }
     // }
+
+    /**
+     * Fix thumbnails by uploading them to Pinata and updating frontmatter
+     * @param markdownDir Directory containing markdown files
+     * @param imageBaseDir Base directory for images
+     * @param maxFiles Maximum number of files to process (default: 1)
+     */
+    /**
+     * Fix thumbnails by uploading them to Pinata and updating frontmatter
+     * @param markdownDir Directory containing markdown files
+     * @param imageBaseDir Base directory for images
+     * @param maxFiles Maximum number of files to process (default: 1)
+     */
+    async fixThumbnails(markdownDir: string, imageBaseDir: string, maxFiles: number = 1): Promise<void> {
+        try {
+            // We're in Electron environment, can use Node modules directly
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Get all markdown files
+            let fullMarkdownDir = markdownDir;
+            if (!markdownDir.startsWith('/')) {
+                fullMarkdownDir = `${this.basePath}/${markdownDir}`;
+            }
+            
+            // Read directory and filter markdown files
+            const files = fs.readdirSync(fullMarkdownDir);
+            const mdFiles = files
+                .filter(file => file.endsWith('.md'))
+                .map(file => path.join(fullMarkdownDir, file))
+                .slice(0, maxFiles);
+            
+            console.log(`Found ${mdFiles.length} files to process`);
+            
+            for (const filePath of mdFiles) {
+                const filename = path.basename(filePath);
+                console.log(`Processing file: ${filename}`);
+                
+                // Read the file content
+                const content = fs.readFileSync(filePath, 'utf8');
+                
+                // Extract frontmatter
+                const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
+                const match = content.match(frontmatterRegex);
+                
+                if (!match) {
+                    console.log(`No frontmatter found in ${filename}`);
+                    continue;
+                }
+                
+                // Parse frontmatter lines
+                const frontmatterLines = match[1].split('\n');
+                const frontmatter: Record<string, any> = {};
+                
+                for (const line of frontmatterLines) {
+                    const colonIndex = line.indexOf(':');
+                    if (colonIndex !== -1) {
+                        const key = line.substring(0, colonIndex).trim();
+                        const value = line.substring(colonIndex + 1).trim();
+                        frontmatter[key] = value;
+                    }
+                }
+                
+                // Check if thumbnail exists in frontmatter
+                if (frontmatter.thumbnail) {
+                    console.log(`Found thumbnail: ${frontmatter.thumbnail}`);
+                    
+                    // Construct full path to the thumbnail image
+                    let thumbnailPath = frontmatter.thumbnail;
+                    if (!thumbnailPath.startsWith('/')) {
+                        thumbnailPath = path.join(imageBaseDir, frontmatter.thumbnail);
+                    }
+                    console.log(`Full thumbnail path: ${thumbnailPath}`);
+                    
+                    // Check if the file exists
+                    if (fs.existsSync(thumbnailPath)) {
+                        // Upload to Pinata
+                        console.log('Uploading to Pinata...');
+                        const cid = await this.pinata.uploadFileFromPath(thumbnailPath, false);
+                        console.log(`Uploaded to IPFS, CID: ${cid}`);
+                        
+                        // Update frontmatter with new CID
+                        frontmatter.thumbnail = cid;
+                        
+                        // Reconstruct frontmatter
+                        let updatedFrontmatter = '---\n';
+                        for (const [key, value] of Object.entries(frontmatter)) {
+                            updatedFrontmatter += `${key}: ${value}\n`;
+                        }
+                        updatedFrontmatter += '---';
+                        
+                        // Update the file content
+                        const updatedContent = content.replace(frontmatterRegex, updatedFrontmatter);
+                        
+                        // Write back to the file
+                        fs.writeFileSync(filePath, updatedContent, 'utf8');
+                        console.log(`Updated thumbnail in ${filename} to CID: ${cid}`);
+                    } else {
+                        console.error(`Thumbnail file not found: ${thumbnailPath}`);
+                    }
+                } else {
+                    console.log(`No thumbnail found in ${filename}`);
+                }
+            }
+            
+            console.log('Done processing files');
+        } catch (error) {
+            console.error('Error fixing thumbnails:', error);
+            throw error;
+        }
+    }
 }
