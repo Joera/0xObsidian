@@ -44,8 +44,6 @@ export class LitService {
         await this.client.connect();
         const provider = new ethers5.providers.JsonRpcProvider(LIT_RPC.CHRONICLE_YELLOWSTONE)
         this.signer = new ethers5.Wallet(this.main.user.private_key, provider);
-
-        console.log("lit capacity token:", this.main.plugin.settings.lit_capacity_token);
         if (this.main.plugin.settings.lit_capacity_token == undefined || this.main.plugin.settings.lit_capacity_token == "") {
             this.main.plugin.settings.lit_capacity_token = await mintCapacityToken(this.main, this.signer, this.client, LIT_NETWORK.Datil);
             console.log("minted capacity token");
@@ -97,8 +95,8 @@ export class LitService {
         const time_2 =  Date.now();
         const sessionSignatures  = await createSessionSignatures(this.client, this.signer, this.main.plugin.settings.lit_capacity_token);
 
-        console.log("cid:", action_cid);
-        console.log("params:", params);
+        // console.log("cid:", action_cid);
+        // console.log("params:", params);
 
         const time_3 = Date.now();
 
@@ -144,8 +142,6 @@ export class LitService {
             await this.init();
         }
 
-        // signed with local pk ,, in constitions we can check if signer is owner of safe 
-
         const { ciphertext, dataToEncryptHash } = await encryptString(
             {
               unifiedAccessControlConditions,
@@ -153,6 +149,8 @@ export class LitService {
             },
             this.client,
         );
+
+
 
         return {
             ciphertext,

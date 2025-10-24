@@ -13,13 +13,11 @@ export interface IOXOUser {
     active: boolean,
     eoa: string,
     private_key: string,
-    msca: string | undefined,
+    lens: string | undefined,
     safe: string | undefined,
-    pkps: IPKPInfo[],
- //   deploySafe: (main: IMainController, chain: string) => Promise<void>,
-    deployMSCA: (main: IMainController) => Promise<void>,
     setSafeAddress: (address: string) => void,
-    addPKP: (name: string, tokenId: string, publicKey: string) => void
+    addLensAccount: (main: IMainController) => Promise<void>
+    checkLensProfile: (main: IMainController) => Promise<boolean>
 }
 
 export class OXOUser implements IOXOUser {
@@ -27,11 +25,11 @@ export class OXOUser implements IOXOUser {
     active: boolean
     eoa: string
     private_key: string
-    msca: string | undefined
+    lens: string |undefined
     safe: string | undefined
-    pkps: IPKPInfo[] = []
 
-    constructor(name: string, active: boolean, private_key: string | undefined, eoa: string | undefined, msca: string | undefined, safe: string | undefined, pkps: IPKPInfo[] | undefined) {
+
+    constructor(name: string, active: boolean, private_key: string | undefined, eoa: string | undefined, safe: string | undefined) {
 
         if(private_key == undefined) {
             private_key = this._generatePK();
@@ -44,14 +42,10 @@ export class OXOUser implements IOXOUser {
         this.name = name;
         this.active = active;
         this.eoa = eoa || "";
+        // this.lens = undefined;
         this.private_key = private_key || "";
-        this.msca = msca != undefined ? ethers.getAddress(msca) : undefined;   
         this.safe = safe != undefined ? ethers.getAddress(safe) : undefined;   
-        this.pkps = pkps != undefined ? pkps : [];   
-    }
-
-    async deployMSCA(main: IMainController) {
-        this.msca = await main.msca.deploySmartAccount(main.plugin.settings.alchemy_key  || 'x');      
+        this.lens = undefined; 
     }
 
     _generatePK() {
@@ -68,8 +62,25 @@ export class OXOUser implements IOXOUser {
         this.safe = ethers.getAddress(safe);
     }
 
-    addPKP(name: string, tokenId: string, publicKey: string) {
-        this.pkps.push({ name, tokenId, publicKey });
-        console.log(this);
+    async checkLensProfile(main: IMainController) {
+
+        let res = await main.lens.checkProfile(this);
+
+        if(res.isErr() || res.value == null){
+            return false;
+        } else {
+            this.lens = res.value.address;
+            console.log(this)
+            return true;
+        }
+    }
+
+    async addLensAccount(main: IMainController) {
+
+        let address = await main.lens.onboardAnonymous(this);
+
+        if(address != undefined) {
+            this.lens = address;
+        }
     }
 }

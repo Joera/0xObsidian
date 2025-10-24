@@ -225,6 +225,8 @@ export const add = async (
 
     const apiPath = onlyHash ? "api/v0/add?onlyHash=true" : "api/v0/add";
 
+    console.log(note, ipfs_endpoint);
+
     // console.log(`https://${fixEndpoint(ipfs_endpoint)}/${apiPath}`);
 
     try {

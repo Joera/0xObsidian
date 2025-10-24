@@ -21,46 +21,13 @@ export default class OxO extends Plugin {
   async onload() {
     await this.loadSettings();
     this.ctrlr = new MainController(this);
-    await this.ctrlr.init();
-
-    // Add command to fix thumbnails
-    this.addCommand({
-      id: "fix-thumbnails",
-      name: "Fix Thumbnails",
-      callback: async () => {
-        try {
-          const markdownDir = "/home/joera/vaults/unaore/niewsbrieven";
-          const imageBaseDir = "/home/joera/Documents/unamore-images";
-          await this.ctrlr.fixThumbnails(markdownDir, imageBaseDir, 1);
-          new Notice("Successfully fixed thumbnails");
-        } catch (error) {
-          console.error("Error fixing thumbnails:", error);
-          new Notice(
-            "Error fixing thumbnails: " +
-              (error instanceof Error ? error.message : String(error)),
-          );
-        }
-      },
-    });
-
-    // When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-    // this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+    await this.ctrlr.init()
   }
 
   onunload() {}
 
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-
-    // Ensure each author has pkps initialized
-    if (this.settings.authors) {
-      this.settings.authors = this.settings.authors.map((author) => {
-        if (!author.pkps) {
-          author.pkps = [];
-        }
-        return author;
-      });
-    }
 
     this.authorsTab = new OxOAuthorsTab(this.app, this);
     this.addSettingTab(this.authorsTab);

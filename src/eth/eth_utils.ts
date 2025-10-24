@@ -13,20 +13,18 @@ export const blockTime = async (block_number: string, provider: JsonRpcProvider)
 
 export const getInternalTransactions = async (chain: string,txHash: string, token: string) : Promise<any[]> => {
 
+    const ETHERSCAN_ENDPOINTS = {
+        SEPOLIA: 'https://api-sepolia.etherscan.io/api',
+        MAINNET: 'https://api.etherscan.io/api',
+        POLYGON: 'https://api.polygonscan.com/api',
+        BASE_SEPOLIA: 'https://api-sepolia.basescan.org/'
+    };
+
     return new Promise( (resolve, reject) : any => {
 
-        let url = `https://api-sepolia.arbiscan.io/api?module=account&action=txlistinternal&txhash=${txHash}&apikey=${token}`
+        let url = `${ETHERSCAN_ENDPOINTS[chain]}?module=account&action=txlistinternal&txhash=${txHash}&apikey=${token}`;
 
-        switch (chain) {
-
-            case 'ETH_MAINNET':
-                url = `https://api.etherscan.io/api?module=account&action=txlistinternal&txhash=${txHash}&apikey=${token}`
-                break;      
-            case 'BASE_SEPOLIA':
-                url = `https://api-sepolia.basescan.org/api?module=account&action=txlistinternal&txhash=${txHash}&apikey=${token}`
-                break;
-            
-        }
+        console.log(url)
     
         fetch(url)
             .then(response => response.json())  

@@ -17,9 +17,9 @@ export const getProvider = (
       break;
 
     case "SEPOLIA":
-      console.log("https://eth-sepolia.g.alchemy.com/v2/" + alchemy_key);
       provider = ethers.getDefaultProvider(
-        "https://eth-sepolia.g.alchemy.com/v2/" + alchemy_key,
+        // "https://eth-sepolia.g.alchemy.com/v2/" + alchemy_key,
+        "https://sepolia.infura.io/v3/5588b2f2645b47bf9d9df736ab328181",
         {
           alchemy: alchemy_key,
         },
@@ -36,7 +36,6 @@ export const getProvider = (
       break;
 
     case "BASE_SEPOLIA":
-      console.log("https://base-sepolia.g.alchemy.com/v2/" + alchemy_key);
       provider = ethers.getDefaultProvider(
         "https://base-sepolia.g.alchemy.com/v2/" + alchemy_key,
         {
@@ -78,7 +77,8 @@ export const getRPC = (chain: string, alchemy_key: string): string => {
       break;
 
     case "SEPOLIA":
-      rpc = `https://eth-sepolia.g.alchemy.com/v2/${alchemy_key}`;
+      // rpc = `https://eth-sepolia.g.alchemy.com/v2/${alchemy_key}`;
+      rpc = "https://sepolia.infura.io/v3/5588b2f2645b47bf9d9df736ab328181";
       break;
 
     case "ARB_SEPOLIA":
