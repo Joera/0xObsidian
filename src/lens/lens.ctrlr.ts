@@ -3,16 +3,18 @@ import { privateKeyToAccount } from "viem/accounts"
 import { signMessageWith } from "@lens-protocol/client/viem";
 import { evmAddress, uri, postId } from "@lens-protocol/client";
 import { article } from "@lens-protocol/metadata";
-import { editPost, post, createAccountWithUsername, canCreateUsername, fetchAccount, fetchPost, addAccountManager } from "@lens-protocol/client/actions";
+import { editPost, post, createAccountWithUsername, canCreateUsername, fetchAccount, fetchPost, addAccountManager, createFeed, fetchFeed } from "@lens-protocol/client/actions";
 import  { walletOnly, StorageClient } from "@lens-chain/storage-client";
 import { chains } from '@lens-chain/sdk/viem';
 import { createWalletClient, http } from 'viem';
 import { handleOperationWith } from "@lens-protocol/client/viem";
+import { feed } from "@lens-protocol/metadata";
+
 
 import { IMainController } from "src/main.ctrlr.js";
 
 const APP_ADDRESS = "0x984eB47F0A6E66bb81aC31c34157d1BAa4B10ae5";
-const FEED = "0x3D8db01C34f6CA96BE88f4c8A59623665E5569F0"
+// const FEED = "0x3D8db01C34f6CA96BE88f4c8A59623665E5569F0"
 const storageClient = StorageClient.create();
 
 
@@ -229,7 +231,7 @@ export class LensService {
 
     // }
 
-    post = async (metadataUri: string) => {
+    post = async (metadataUri: string, publicationFeed: string) => {
 
         console.log("postin")
 
@@ -243,7 +245,7 @@ export class LensService {
             client, 
             { 
                 contentUri: uri(metadataUri),
-                feed: evmAddress(FEED)
+                feed: evmAddress(publicationFeed)
             }
         )
         .andThen(handleOperationWith(wallet))
@@ -282,6 +284,36 @@ export class LensService {
 
         return result.value;
         
+    }
+
+    createFeed = async (name: string, description: string, safeAddress: string) => {
+
+        const metadata = feed({
+            name,
+            description
+        });
+        
+        const { uri : metadataUri } = await storageClient.uploadAsJson(metadata);
+
+        let { session, client, wallet } = await this.auth("builder");
+
+         const result = await createFeed(client, {
+            admins: [evmAddress(safeAddress)],
+            metadataUri: uri(metadataUri),
+        })
+        .andThen(handleOperationWith(wallet))
+        .andThen(client.waitForTransaction)
+        .andThen((txHash) => fetchFeed(client, { txHash }));
+
+        if (result.isErr()) {
+            return console.error(result.error);
+        }
+
+        const f = result.value;
+
+        if (f != null) {
+            return f.address;
+        }
     }
 }
 
