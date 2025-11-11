@@ -44,11 +44,11 @@ export class LitService {
         await this.client.connect();
         const provider = new ethers5.providers.JsonRpcProvider(LIT_RPC.CHRONICLE_YELLOWSTONE)
         this.signer = new ethers5.Wallet(this.main.user.private_key, provider);
-        if (this.main.plugin.settings.lit_capacity_token == undefined || this.main.plugin.settings.lit_capacity_token == "") {
+        // if (this.main.plugin.settings.lit_capacity_token == undefined || this.main.plugin.settings.lit_capacity_token == "") {
             this.main.plugin.settings.lit_capacity_token = await mintCapacityToken(this.main, this.signer, this.client, LIT_NETWORK.Datil);
-            console.log("minted capacity token");
+            console.log("minted capacity token",this.main.plugin.settings.lit_capacity_token);
             this.main.plugin.saveSettings();
-        }
+        // }
 
         
     }

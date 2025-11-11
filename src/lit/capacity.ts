@@ -11,7 +11,7 @@ export const mintCapacityToken = async (main: IMainController, ethersWallet: any
 
     const capacityTokenId = (
         await litContracts.mintCapacityCreditsNFT({
-        requestsPerKilosecond: 10,
+        requestsPerKilosecond: 100,
         daysUntilUTCMidnightExpiration: 7,
         })
     ).capacityTokenIdStr;

@@ -38,7 +38,7 @@ export const DEFAULT_SETTINGS: IOxOSettings = {
   pinata_api_key: "",
   pinata_jwt: "",
   pinata_secret_key: "",
-  lit_capacity_token: "",
+  lit_capacity_token: "328084",
 };
 
 export class OxOAuthorsTab extends PluginSettingTab {

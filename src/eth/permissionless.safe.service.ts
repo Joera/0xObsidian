@@ -72,6 +72,8 @@ export class PermissionlessSafeService implements IPermissionlessSafeService {
   constructor(main: IMainController, chain: string) {
     this.main = main;
     this.chainId = getChainId(chain);
+
+    console.log("CHAIN", chain, this.chainId)
     
     this.publicClient = createPublicClient({
       chain: getViemChainByName(chain),
@@ -368,59 +370,59 @@ export class PermissionlessSafeService implements IPermissionlessSafeService {
       
       const url = `${baseUrl}&module=account&action=txlistinternal&txhash=${txHash}&apikey=${apiKey}`;
 
-      console.log(url)
+      // console.log(url)
       
       try {
           const response = await fetch(url);
           const data = await response.json();
           return data.result || [];
       } catch (error) {
-          console.error('Failed to fetch internal transactions:', error);
+          // console.error('Failed to fetch internal transactions:', error);
           return [];
       }
   }
 
-  private async extractAllDeployedAddresses(txHash: string): Promise<string[]> {
-    console.log("🔍 Extracting all deployed addresses from tx:", txHash);
+//   private async extractAllDeployedAddresses(txHash: string): Promise<string[]> {
+//     console.log("🔍 Extracting all deployed addresses from tx:", txHash);
     
-    let attempts = 0;
-    const maxAttempts = 9;
+//     let attempts = 0;
+//     const maxAttempts = 9;
     
-    while (attempts < maxAttempts) {
-        attempts++;
+//     while (attempts < maxAttempts) {
+//         attempts++;
         
-        const response: any = await this.getInternalTransactions(
-            this.chainId,
-            txHash,
-            this.main.plugin.settings.etherscan_key
-        );
+//         const response: any = await this.getInternalTransactions(
+//             this.chainId,
+//             txHash,
+//             this.main.plugin.settings.etherscan_key
+//         );
         
-        const txs = Array.isArray(response) ? response : response?.result || [];
+//         const txs = Array.isArray(response) ? response : response?.result || [];
         
-        if (Array.isArray(txs) && txs.length > 0) {
-            const deployedAddresses = txs
-                .filter(tx => tx.contractAddress && tx.contractAddress !== "")
-                .map(tx => tx.contractAddress);
+//         if (Array.isArray(txs) && txs.length > 0) {
+//             const deployedAddresses = txs
+//                 .filter(tx => tx.contractAddress && tx.contractAddress !== "")
+//                 .map(tx => tx.contractAddress);
             
-            if (deployedAddresses.length > 0) {
-                console.log("✅ Found", deployedAddresses.length, "deployed contracts:", deployedAddresses);
-                return deployedAddresses;
-            }
-        }
+//             if (deployedAddresses.length > 0) {
+//                 console.log("✅ Found", deployedAddresses.length, "deployed contracts:", deployedAddresses);
+//                 return deployedAddresses;
+//             }
+//         }
         
-        if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 3000));
-        }
-    }
+//         if (attempts < maxAttempts) {
+//             await new Promise(resolve => setTimeout(resolve, 3000));
+//         }
+//     }
     
-    throw new Error(`Failed to extract deployed addresses for tx: ${txHash}`);
-}
+//     throw new Error(`Failed to extract deployed addresses for tx: ${txHash}`);
+// }
 
 
-  private getRPC(): string {
-    // Your existing RPC logic
-    return "";
-  }
+  // private getRPC(): string {
+  //   // Your existing RPC logic
+  //   return "";
+  // }
 
     // Helper function to ensure proper 0x prefixed hex string format
   private ensureHex(value: string): `0x${string}` {
