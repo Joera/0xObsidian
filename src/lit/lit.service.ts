@@ -1,18 +1,16 @@
-import { AUTH_METHOD_SCOPE, AUTH_METHOD_TYPE, LIT_ABILITY, LIT_NETWORK, LIT_RPC, LitAbility } from "@lit-protocol/constants";
+import { LIT_NETWORK, LIT_RPC, LitAbility } from "@lit-protocol/constants";
 import { LitNodeClient } from "@lit-protocol/lit-node-client";
-// import { createSiweMessageWithRecaps, generateAuthSig } from "@lit-protocol/auth-helpers";
 import {
     LitActionResource,
     LitPKPResource,
     createSiweMessage,
     generateAuthSig,
   } from "@lit-protocol/auth-helpers";  
-import { LitContracts } from "@lit-protocol/contracts-sdk";
 import { IMainController } from "src/main.ctrlr.js";
 import { ethers as ethers5 } from "ethers5"; // Ethers v5
 import { encryptString } from '@lit-protocol/encryption';
 import { createSessionSignatures } from "./session.js";
-import { delegateCapacityToken, mintCapacityToken } from "./capacity.js";
+import { mintCapacityToken } from "@s2s/soul2soul-shared"
 
 const CHAIN_ID = "CRONICLE_YELLOWSTONE";
 
@@ -44,13 +42,9 @@ export class LitService {
         await this.client.connect();
         const provider = new ethers5.providers.JsonRpcProvider(LIT_RPC.CHRONICLE_YELLOWSTONE)
         this.signer = new ethers5.Wallet(this.main.user.private_key, provider);
-        // if (this.main.plugin.settings.lit_capacity_token == undefined || this.main.plugin.settings.lit_capacity_token == "") {
-            this.main.plugin.settings.lit_capacity_token = await mintCapacityToken(this.main, this.signer, this.client, LIT_NETWORK.Datil);
-            console.log("minted capacity token",this.main.plugin.settings.lit_capacity_token);
-            this.main.plugin.saveSettings();
-        // }
-
-        
+        this.main.plugin.settings.lit_capacity_token = await mintCapacityToken(this.signer, LIT_NETWORK.Datil);
+        console.log("minted capacity token", this.main.plugin.settings.lit_capacity_token);
+        this.main.plugin.saveSettings();
     }
 
     async wildcardAuthSig(expirationTime: string) {
@@ -82,6 +76,11 @@ export class LitService {
         });
     
         return authSig;
+    }
+
+    async session() {
+
+        return await createSessionSignatures(this.client, this.signer, this.main.plugin.settings.lit_capacity_token);
     }
 
     async runAction(action_cid: string, params: any) {

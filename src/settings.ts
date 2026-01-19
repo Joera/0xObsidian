@@ -3,9 +3,8 @@ import { App, Setting } from "obsidian";
 import OxO from "./main.js";
 import { IOXOUser } from "./user/user.js";
 import { IInvite, IUpdate } from "./types/oxo.js";
-import { Wallet } from "ethers/wallet";
-import { PKPNameModal } from "./ui/pkp-name.modal.js"; // Import the PKPNameModal
 import { safeField } from "./settings.factory.js";
+import { AuthorModal } from "./user/author.modal.js";
 
 export interface IOxOSettings {
   authors: IOXOUser[];
@@ -55,18 +54,6 @@ export class OxOAuthorsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    // new Setting(containerEl)
-    // .setName('Listen to updates')
-    // .setDesc('')
-    // .addToggle( button => button
-    // 	.setValue(this.plugin.settings.listening)
-    // 	.onChange( async () => {
-    // 		this.plugin.settings.listening = !this.plugin.settings.listening;
-    // 		await this.plugin.saveSettings();
-    // 		this.plugin.authorsTab.display();
-    // 	})
-    // );
-
     new Setting(containerEl)
       .setHeading() // This makes it appear as a header
       .setName("Authors:");
@@ -94,18 +81,21 @@ export class OxOAuthorsTab extends PluginSettingTab {
         });
       }
 
-      if (author.eoa == undefined) {
-        const wallet = new Wallet(author.private_key);
-        author.eoa = wallet.address;
-        this.plugin.saveSettings();
-      }
+      // if (author.eoa == undefined) {
+      //   const wallet = new Wallet(author.private_key);
+      //   author.eoa = wallet.address;
+      //   this.plugin.saveSettings();
+      // }
 
-      if (author.safe == undefined || author.safe == "") {
-        author.safe = await this.plugin.ctrlr.account[
-          Object.keys(this.plugin.ctrlr.account)[0]
-        ].getSafeAddress([author.eoa], "default_safe");
-        this.plugin.saveSettings();
-      }
+      // if (author.safe == undefined || author.safe == "") {
+        
+      //   author.safe = await this.plugin.ctrlr.account[
+      //     Object.keys(this.plugin.ctrlr.account)[0]
+      //   ].getSafeAddress([author.eoa], "default_safe");
+
+
+      //   this.plugin.saveSettings();
+      // }
 
       new Setting(authorEl)
         .setName("Name")
@@ -148,42 +138,10 @@ export class OxOAuthorsTab extends PluginSettingTab {
           }),
         );
 
-      // new Setting(authorEl)
-      // 	.setName('MSCA')
-      // 	.setDesc('The address for the modular smart account that operates for you on chain')
-      // 	.addText(text => text
-      // 		.setValue(author.msca || "")
-      // 	);
-
       for (let chain of Object.keys(this.plugin.ctrlr.account)) {
         safeField(chain, author, authorEl);
       }
 
-      // for (let pkp of author.pkps) {
-
-      // 	// let info = await this.plugin.ctrlr.lit.getInfo(pkp.tokenId);
-
-      // 	new Setting(authorEl)
-      // 		.setName(`PKP: ${pkp.name}`)
-      // 		.setDesc(pkp.tokenId);
-      // }
-
-      // new Setting(authorEl)
-      // 	// .setName('Mint new PKP')
-      // 	// .setDesc('Create a new Programmable Key Pair owned by your Safe')
-      // 	.addButton(button => button
-      // 		.setButtonText('Mint PKP')
-      // 		.onClick(async () => {
-      // 			try {
-      // 				new PKPNameModal(this.app, this.plugin.ctrlr, async (name) => {
-      // 					await this.plugin.ctrlr.mintAuthorPKP(name);
-      // 					this.display();
-      // 				}).open();
-      // 			} catch (error) {
-      // 				console.error('Error minting PKP:', error);
-      // 			}
-      // 		})
-      // 	);
     }
 
     new Setting(containerEl)
@@ -191,7 +149,11 @@ export class OxOAuthorsTab extends PluginSettingTab {
       // .setDesc('Create a local signer and Modular Smart Account following EIP-4337 on Arbitrum Sepolia')
       .addButton((button) =>
         button.setButtonText("New Author").onClick(async () => {
-          await this.plugin.ctrlr.newAuthor();
+
+          const onSubmit = async (name: string, type: string) => {
+            await this.plugin.ctrlr.newAuthor(name, type);
+          }
+          return new AuthorModal(this.app, this.plugin.ctrlr, onSubmit).open();
         }),
       );
 

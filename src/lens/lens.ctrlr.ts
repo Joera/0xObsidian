@@ -53,7 +53,7 @@ export class LensService {
 
             case "new":
 
-                console.log("auth as new")
+                // console.log("auth as new")
 
                 session = await client.login({
                     onboardingUser: {
@@ -128,7 +128,7 @@ export class LensService {
             },
         });
 
-        console.log("profile", profile.value)
+        console.log(profile.value.username)
 
         return profile.value.address || "";
     }
@@ -137,21 +137,20 @@ export class LensService {
 
 
         const name = this.lensUsername();
-        console.log("checking if " + name + " exists")
         const { session, client, wallet } = await this.auth("new");
 
         if (session.isErr()) {
             return console.error(session.error);
         }
 
-        let profile =  await fetchAccount( client, { 
+        let profile: any =  await fetchAccount( client, { 
             username: {
                 localName: name,
             //    namespace: evmAddress("0x1234…"), // the Username namespace address
             },
         });
 
-        console.log("profile", profile)
+        if (profile && profile.value) { console.log("LensUser", profile.value.username) }
 
         return profile;
     }

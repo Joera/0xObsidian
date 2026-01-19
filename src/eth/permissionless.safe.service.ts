@@ -5,9 +5,10 @@ import {
 import { createSmartAccountClient } from "permissionless";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { createPublicClient, encodeFunctionData, http, keccak256, parseAbi, parseEther, toBytes } from "viem";
-import { privateKeyToAccount, toAccount } from "viem/accounts";
+import { privateKeyToAccount  } from "viem/accounts";
 import { IMainController } from "../main.ctrlr.js";
-import { getChainId, getRPCUrl, getScanApi, getViemChainById, getViemChainByName } from "./chains.factory.js";
+import { getChainId, getNetwork, getRPCUrl, getScanApi, getViemChainById, getViemChainByName } from "./chains.factory.js";
+import { JsonRpcProvider } from "ethers";
 
 
 const ENTRYPOINT_ADDRESS_V07 = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
@@ -45,14 +46,13 @@ export interface IPermissionlessSafeService {
 
   
   updateSigner: (pk: string) => Promise<string>;
-  // getPredictedAddress: (owners: string[], salt: string) => Promise<string>;
-  connectToFreshSafe: (owners: string[], salt: string) => Promise<string>
+  connectToFreshSafe: (salt: string) => Promise<string>
   connectToExistingSafe: (safe_address: string) => Promise<string>
   genericRead: (address: string, abi: string, method: string, args: string[]) => Promise<any>;
   genericTx: (address: string, abi: string, method: string, args: string[], deploy: boolean, wait?: boolean) => Promise<string>;
   batchGenericTx: (calls: Array<{ address: string; abi: string; method: string; args: any[]; }>) => Promise<string[]>;
   valueTx: (to: string, amount: string) => Promise<string>;
-  getSafeAddress: (owners: string[], salt: string) => Promise<string>;
+  getSafeAddress: (salt: string) => Promise<string>;
   isDeployed: () => Promise<boolean>;
 }
 
@@ -70,14 +70,18 @@ export class PermissionlessSafeService implements IPermissionlessSafeService {
   private pimlicoClient: any;
 
   constructor(main: IMainController, chain: string) {
+    
     this.main = main;
     this.chainId = getChainId(chain);
+    // console.log("CHAIN", chain, this.chainId)
+    const rpc = getRPCUrl(this.chainId, main.plugin.settings.alchemy_key);
+    const network = getNetwork(this.chainId);
 
-    console.log("CHAIN", chain, this.chainId)
+    this.provider = new JsonRpcProvider(rpc, network)
     
     this.publicClient = createPublicClient({
       chain: getViemChainByName(chain),
-      transport: http(getRPCUrl(this.chainId, main.plugin.settings.alchemy_key))
+      transport: http(rpc)
     });
 
     this.pimlicoClient = createPimlicoClient({
@@ -104,7 +108,7 @@ export class PermissionlessSafeService implements IPermissionlessSafeService {
             return false;
         }
         
-        console.log("Checking if Safe is deployed:", checkAddress);
+        // console.log("Checking if Safe is deployed:", checkAddress);
         
         // Get the bytecode at the address
         const code = await this.publicClient.getBytecode({ 
@@ -114,7 +118,7 @@ export class PermissionlessSafeService implements IPermissionlessSafeService {
         // If there's no code or just '0x', the contract is not deployed
         const deployed = code !== undefined && code !== '0x' && code.length > 2;
         
-        console.log("Safe deployment status:", deployed);
+        // console.log("Safe deployment status:", deployed);
         return deployed;
         
     } catch (error: any) {
@@ -123,7 +127,7 @@ export class PermissionlessSafeService implements IPermissionlessSafeService {
     }
   }
 
-  async connectToFreshSafe(owners: string[], salt: string) {
+  async connectToFreshSafe(salt: string) {
 
       const smartAccount = await toSafeSmartAccount({
         client: this.publicClient,
@@ -170,7 +174,7 @@ export class PermissionlessSafeService implements IPermissionlessSafeService {
     return this.address;
   }
 
-  async getSafeAddress(owner_keys: string[], salt: string): Promise<string> {
+  async getSafeAddress(salt: string): Promise<string> {
 
     const tempAccount = await toSafeSmartAccount({
       client: this.publicClient,
@@ -220,11 +224,11 @@ export class PermissionlessSafeService implements IPermissionlessSafeService {
         args: args,
     });
 
-    console.log("📝 Encoded data:", data);
+    // console.log("📝 Encoded data:", data);
 
     const gasPrice = await this.pimlicoClient.getUserOperationGasPrice();
 
-    console.log("📤 About to call sendTransaction...");
+    // console.log("📤 About to call sendTransaction...");
     
     const txHash = await this.smartAccountClient.sendTransaction({
         to: address as `0x${string}`,

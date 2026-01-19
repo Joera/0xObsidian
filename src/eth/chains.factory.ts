@@ -60,6 +60,28 @@ export const getChainId = (chain: string): number => {
     }
 }
 
+export const getNetwork = (chainId: number)  => {
+
+  let network;
+
+  switch (chainId) {
+    case 1:
+      network = {
+        chainId:  chainId,
+        name: "ethereum"
+      }
+      break;
+    case 8453:
+      network = {
+        chainId:  chainId,
+        name:  "base"
+      }
+      break;
+  }
+
+  return network;
+}
+
 export const getRPCUrl = (chainId: number, alchemy_key: string): string => {
   let rpc;
 

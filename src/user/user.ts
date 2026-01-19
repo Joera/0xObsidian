@@ -39,6 +39,8 @@ export class OXOUser implements IOXOUser {
             eoa = this.__address(private_key || '');
         }
 
+        console.log("safe", safe)
+
         this.name = name;
         this.active = active;
         this.eoa = eoa || "";
