@@ -16,7 +16,7 @@ export interface IOXOUser {
     lens: string | undefined,
     safe: string | undefined,
     setSafeAddress: (address: string) => void,
-    addLensAccount: (main: IMainController) => Promise<void>
+    addLensAccount: (main: IMainController) => Promise<string>
     checkLensProfile: (main: IMainController) => Promise<boolean>
 }
 
@@ -38,8 +38,6 @@ export class OXOUser implements IOXOUser {
         if (eoa == undefined) {
             eoa = this.__address(private_key || '');
         }
-
-        console.log("safe", safe)
 
         this.name = name;
         this.active = active;
@@ -79,10 +77,6 @@ export class OXOUser implements IOXOUser {
 
     async addLensAccount(main: IMainController) {
 
-        let address = await main.lens.onboardAnonymous(this);
-
-        if(address != undefined) {
-            this.lens = address;
-        }
+        return await main.lens.registerProfile(this);
     }
 }

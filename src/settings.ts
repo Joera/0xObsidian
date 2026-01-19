@@ -138,10 +138,19 @@ export class OxOAuthorsTab extends PluginSettingTab {
           }),
         );
 
+      // moeten we niet meteen alles inladen ? [user][chain]? 
       for (let chain of Object.keys(this.plugin.ctrlr.account)) {
         safeField(chain, author, authorEl);
       }
 
+      new Setting(authorEl) // This makes it appear as a header
+        .setName("Lens profile:")
+        .setDesc(author.lens || "")
+        .addButton((button) =>
+          button.setButtonText("Copy").onClick(() => {
+            navigator.clipboard.writeText(author.lens || "");
+          }),
+        );
     }
 
     new Setting(containerEl)

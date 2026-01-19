@@ -7,6 +7,7 @@ import { LensService } from "./lens/lens.ctrlr.js";
 import { IPermissionlessSafeService, PermissionlessSafeService } from "./eth/permissionless.safe.service.js";
 import { Notice } from "obsidian";
 import { AuthorModal } from "./user/author.modal.js";
+import { IWaapService, WaapService } from "./eth/waap.service.js";
 
 // @ts-ignore
 const basePath = (app.vault.adapter as any).basePath;
@@ -15,7 +16,7 @@ export interface IMainController {
   user: IOXOUser;
   basePath: string;
   env: { [key: string]: string | undefined };
-  account: { [key: string]: IPermissionlessSafeService }; 
+  account: { [key: string]: IPermissionlessSafeService | IWaapService }; 
   safeInstance: any;
   ipfs: IpfsCtrlr;
   lit: any;
@@ -24,6 +25,8 @@ export interface IMainController {
   init: () => Promise<void>;
   initChains: (chains: string[]) => Promise<void>;
   initChain: (chain: string) => Promise<void>;
+  hasActiveUser: () => boolean;
+  hasAccounts: () => string[];
   newAuthor: (name: string, type: string) => Promise<void>;
   toggleAuthor: (user: IOXOUser) => Promise<void>;
 }
@@ -32,7 +35,7 @@ export class MainController implements IMainController {
   user!: IOXOUser;
   basePath: string;
   env!: { [key: string]: string | undefined };
-  account!: { [key: string]: IPermissionlessSafeService };
+  account!: { [key: string]: IPermissionlessSafeService | IWaapService };
   ipfs!: IpfsCtrlr;
   lit!: any;
   lens: any;
@@ -56,12 +59,7 @@ export class MainController implements IMainController {
 
     if (activeUser == undefined) {
 
-      new Notice("no active user", 3000)
-
-      const onSubmit = async (name: string, type: string) => {
-        await this.plugin.ctrlr.newAuthor(name, type);
-      }
-      return new AuthorModal(this.plugin.app, this, onSubmit).open();
+      new Notice("no active 0xObsidian user", 3000)
 
     } else {
       const { name, active, private_key, eoa, safe } = activeUser;
@@ -74,9 +72,20 @@ export class MainController implements IMainController {
     }
   }
 
+  hasActiveUser() {
+  
+    return this.user && this.user.private_key ? true : false;
+  }
+
+  hasAccounts() {
+
+    return Object.keys(this.account)
+  }
+
   async initChains(chains: string[]) {
+
     for (const chain of chains) {
-      this.initChain(chain);
+      await this.initChain(chain);
     }
   }
 
@@ -85,24 +94,25 @@ export class MainController implements IMainController {
       const salt = "default_safe";
 
       this.account[chain] = new PermissionlessSafeService(this, chain);
-      const signerAddress = await this.account[chain].updateSigner(this.user.private_key);
       
-      const safe_address = await this.account[chain].connectToFreshSafe(salt);
-      
-      const deployed = await this.account[chain].isDeployed();
-      // console.log("is deployed", deployed, chain, safe_address);
-
-      if (!deployed) {
+      if ('connectToFreshSafe' in this.account[chain]) {
+        const signerAddress = await this.account[chain].updateSigner(this.user.private_key)
+        const safe_address = await this.account[chain].connectToFreshSafe(salt);
+        const deployed = await this.account[chain].isDeployed();
+        if (!deployed) {
+          new Notice("deploying safe to " + chain);
           const deploy = await this.account[chain].valueTx(safe_address, "1");
-          console.log("deployed safe to:", chain, deploy);
-      }
+        }
 
-      // Use the safe_address that was just deployed/connected
-      await this.account[chain].connectToExistingSafe(safe_address);
+        await this.account[chain].connectToExistingSafe(safe_address);
+      }
+    
+      
   }
 
   async newAuthor(name: string, type: string) {
-    const user = new OXOUser(
+
+    this.user = new OXOUser(
       name,
       true,
       undefined,
@@ -110,13 +120,71 @@ export class MainController implements IMainController {
       undefined,
     );
 
-    for (const chain of Object.keys(this.account)) {
-      this.account[chain].updateSigner(user.private_key);
+    // you may need to switch to other account type !! 
+    if (this.hasAccounts().length < 1) {
+      await this.initChains(['ETH_MAINNET','BASE'])
+    } else {
+
+      for (const chain of Object.keys(this.account)) {
+
+        if ('updateSigner' in this.account[chain]) {
+          await this.account[chain].updateSigner(this.user.private_key);
+        }
+      }
     }
 
-    user.safe = await this.account[Object.keys(this.account)[0]].connectToFreshSafe("default_safe")
+    console.log("type", type)
 
-    this.plugin.settings.authors.push(user);
+    switch (type) {
+
+      case "safe": 
+
+        this.user = new OXOUser(
+          name,
+          true,
+          undefined,
+          undefined,
+          undefined,
+        );
+
+        
+
+        // you may need to switch to other account type !! 
+        if (this.hasAccounts().length < 1) {
+          await this.initChains(['ETH_MAINNET','BASE'])
+        } else {
+
+          for (const chain of Object.keys(this.account)) {
+            if ('connectToFreshSafe' in this.account[chain]) {
+              await this.account[chain].updateSigner(this.user.private_key);
+            }
+          }
+        }
+
+        if ('connectToFreshSafe' in this.account["ETH_MAINNET"]) {
+          this.user.safe = await this.account["ETH_MAINNET"].connectToFreshSafe("default_safe");
+        }
+
+        break;
+
+      case "waap":
+
+      console.log("inside waap")
+
+        this.account['waap'] = new WaapService(this, 'ETH_MAINNET');
+        const address = await this.account['waap'].login()
+
+    
+
+
+        break;
+    }
+
+    this.user.lens = await this.user.addLensAccount(this)
+
+    console.log(this.user)
+   
+    this.plugin.settings.authors.push(this.user);
     this.plugin.authorsTab.display();
     this.plugin.saveSettings();
   }
@@ -132,8 +200,10 @@ export class MainController implements IMainController {
 
     // not checked
     for (const chain of Object.keys(this.account)) {
-      this.account[chain].updateSigner(this.user.private_key);
-      this.account[chain].connectToFreshSafe("default_safe");
+      if ('connectToFreshSafe' in this.account[chain]) {
+        this.account[chain].updateSigner(this.user.private_key);
+        this.account[chain].connectToFreshSafe("default_safe");
+      }
     }
 
     this.lit.init();

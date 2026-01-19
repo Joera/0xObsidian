@@ -26,13 +26,6 @@ interface InternalTransaction {
   traceId: string;
 }
 
-type GenericTxCall  = {
-    address: string;
-    abi: string;
-    method: string;
-    args: any[];
-};
-
 
 export interface IPermissionlessSafeService {
   main: IMainController;
@@ -43,8 +36,6 @@ export interface IPermissionlessSafeService {
   provider: any;
   address: string;
 
-
-  
   updateSigner: (pk: string) => Promise<string>;
   connectToFreshSafe: (salt: string) => Promise<string>
   connectToExistingSafe: (safe_address: string) => Promise<string>

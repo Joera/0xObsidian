@@ -12,6 +12,7 @@ import { feed } from "@lens-protocol/metadata";
 
 
 import { IMainController } from "src/main.ctrlr.js";
+import { Notice } from "obsidian";
 
 const APP_ADDRESS = "0x984eB47F0A6E66bb81aC31c34157d1BAa4B10ae5";
 // const FEED = "0x3D8db01C34f6CA96BE88f4c8A59623665E5569F0"
@@ -109,7 +110,7 @@ export class LensService {
 
     lensUsername() {
 
-        return this.main.user.name.split(".")[0] + "_" + this.main.user.safe?.slice(-6).toLowerCase() + "-v22";
+        return this.main.user.name.split(".")[0] + "_" + this.main.user.safe?.slice(-4).toLowerCase() + "-v1";
     }
 
      async getAddress () {
@@ -133,7 +134,7 @@ export class LensService {
         return profile.value.address || "";
     }
 
-    async checkProfile () {
+    async checkProfile() {
 
 
         const name = this.lensUsername();
@@ -156,7 +157,9 @@ export class LensService {
     }
 
 
-    async onboardAnonymous  (user: any)  {
+    async registerProfile(user: any)  {
+
+        new Notice("registering Lens account",2500)
 
         const name = this.lensUsername();
 
@@ -167,9 +170,9 @@ export class LensService {
         }
 
         const { uri: metadataUri } = await storageClient.uploadAsJson({ 
-                name: "Anonymnous", 
+                name: user.name || 'anonymous', 
                 picture: "https://via.placeholder.com/200x200", 
-                bio: "anon account" 
+                bio: "" 
         });
 
         const isAvailable = await canCreateUsername(client, {
