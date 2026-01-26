@@ -6,7 +6,6 @@ import { LitService } from "./lit/lit.service.js";
 import { LensService } from "./lens/lens.ctrlr.js";
 import { IPermissionlessSafeService, PermissionlessSafeService } from "./eth/permissionless.safe.service.js";
 import { Notice } from "obsidian";
-import { AuthorModal } from "./user/author.modal.js";
 import { IWaapService, WaapService } from "./eth/waap.service.js";
 
 // @ts-ignore
@@ -16,14 +15,15 @@ export interface IMainController {
   user: IOXOUser;
   basePath: string;
   env: { [key: string]: string | undefined };
-  account: { [key: string]: IPermissionlessSafeService | IWaapService }; 
+  account: { [key: string]: IPermissionlessSafeService }; 
   safeInstance: any;
   ipfs: IpfsCtrlr;
   lit: any;
   lens: any;
   plugin: OxO;
+  waap: IWaapService;
   init: () => Promise<void>;
-  initChains: (chains: string[]) => Promise<void>;
+  initChains: (chains: string[]) => Promise<boolean>;
   initChain: (chain: string) => Promise<void>;
   hasActiveUser: () => boolean;
   hasAccounts: () => string[];
@@ -35,12 +35,13 @@ export class MainController implements IMainController {
   user!: IOXOUser;
   basePath: string;
   env!: { [key: string]: string | undefined };
-  account!: { [key: string]: IPermissionlessSafeService | IWaapService };
+  account!: { [key: string]: IPermissionlessSafeService };
   ipfs!: IpfsCtrlr;
   lit!: any;
   lens: any;
   pinata!: PinataService;
   plugin: OxO;
+  waap!: IWaapService
 
   constructor(plugin: OxO) {
     this.basePath = basePath;
@@ -53,8 +54,8 @@ export class MainController implements IMainController {
     this.account = {};
     this.pinata = new PinataService(this);
     this.lit = new LitService(this);
-    this.lens = new LensService(this)
-
+    this.lens = new LensService(this);
+  
     const activeUser = this.plugin.settings.authors.find((a: any) => a.active);
 
     if (activeUser == undefined) {
@@ -87,26 +88,24 @@ export class MainController implements IMainController {
     for (const chain of chains) {
       await this.initChain(chain);
     }
+
+    return true;
   }
 
   async initChain(chain: string) {
 
       const salt = "default_safe";
-
       this.account[chain] = new PermissionlessSafeService(this, chain);
       
-      if ('connectToFreshSafe' in this.account[chain]) {
-        const signerAddress = await this.account[chain].updateSigner(this.user.private_key)
-        const safe_address = await this.account[chain].connectToFreshSafe(salt);
-        const deployed = await this.account[chain].isDeployed();
-        if (!deployed) {
-          new Notice("deploying safe to " + chain);
-          const deploy = await this.account[chain].valueTx(safe_address, "1");
-        }
+      const signerAddress = await this.account[chain].updateSigner(this.user.private_key)
+      const safe_address = await this.account[chain].connectToFreshSafe(salt);
+      // const deployed = await this.account[chain].isDeployed();
+      // if (!deployed) {
+      //   new Notice("deploying safe to " + chain);
+      //   const deploy = await this.account[chain].valueTx(safe_address, "1");
+      // }
 
-        await this.account[chain].connectToExistingSafe(safe_address);
-      }
-    
+      await this.account[chain].connectToExistingSafe(safe_address);
       
   }
 
@@ -126,14 +125,11 @@ export class MainController implements IMainController {
     } else {
 
       for (const chain of Object.keys(this.account)) {
-
-        if ('updateSigner' in this.account[chain]) {
-          await this.account[chain].updateSigner(this.user.private_key);
-        }
+        await this.account[chain].updateSigner(this.user.private_key);
       }
     }
 
-    console.log("type", type)
+    // console.log("type", type)
 
     switch (type) {
 
@@ -147,43 +143,23 @@ export class MainController implements IMainController {
           undefined,
         );
 
-        
-
         // you may need to switch to other account type !! 
         if (this.hasAccounts().length < 1) {
           await this.initChains(['ETH_MAINNET','BASE'])
         } else {
 
           for (const chain of Object.keys(this.account)) {
-            if ('connectToFreshSafe' in this.account[chain]) {
               await this.account[chain].updateSigner(this.user.private_key);
-            }
           }
         }
 
-        if ('connectToFreshSafe' in this.account["ETH_MAINNET"]) {
-          this.user.safe = await this.account["ETH_MAINNET"].connectToFreshSafe("default_safe");
-        }
-
-        break;
-
-      case "waap":
-
-      console.log("inside waap")
-
-        this.account['waap'] = new WaapService(this, 'ETH_MAINNET');
-        const address = await this.account['waap'].login()
-
-    
-
-
+        this.user.safe = await this.account["ETH_MAINNET"].connectToFreshSafe("default_safe");
+      
         break;
     }
 
     this.user.lens = await this.user.addLensAccount(this)
 
-    console.log(this.user)
-   
     this.plugin.settings.authors.push(this.user);
     this.plugin.authorsTab.display();
     this.plugin.saveSettings();

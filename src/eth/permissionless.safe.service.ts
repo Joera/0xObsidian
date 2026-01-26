@@ -4,7 +4,7 @@ import {
 } from "permissionless/accounts";
 import { createSmartAccountClient } from "permissionless";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
-import { createPublicClient, encodeFunctionData, http, keccak256, parseAbi, parseEther, toBytes } from "viem";
+import { createPublicClient, encodeFunctionData, http, keccak256, parseEther, toBytes } from "viem";
 import { privateKeyToAccount  } from "viem/accounts";
 import { IMainController } from "../main.ctrlr.js";
 import { getChainId, getNetwork, getRPCUrl, getScanApi, getViemChainById, getViemChainByName } from "./chains.factory.js";
@@ -309,49 +309,47 @@ export class PermissionlessSafeService implements IPermissionlessSafeService {
   }
 
 
-  /**
-   * Strategy 2: Extract from internal transactions (fallback)
-   */
-  private async extractFromInternalTransactions(txHash: string): Promise<string> {
+  private async extractFromInternalTransactions(
+    txHash: string, 
+    expectedFactory?: string,  // Add this parameter
+    safeAddress?: string       // Add this parameter
+  ): Promise<string> {
     console.log("🔄 Querying internal transactions...");
     
     let attempts = 0;
     const maxAttempts = 9;
-    let txs: InternalTransaction[] = [];
     
     while (attempts < maxAttempts) {
-
-      const response : any =  await this.getInternalTransactions(
+      const response: any = await this.getInternalTransactions(
         this.chainId,
         txHash,
         this.main.plugin.settings.etherscan_key
       );
-      ``
-      // console.log(`Attempt ${attempts + 1}: Raw response:`, response);
-      // console.log(`Response type:`, typeof response);
-      // console.log(`Is array:`, Array.isArray(response));
       
-      // Check if response has a result property
       const txs = Array.isArray(response) ? response : response?.result || [];
-      // console.log(`Processed txs:`, txs);
-      // console.log(`Txs length:`, txs.length);
       
       if (Array.isArray(txs)) {
-        const deploymentTx = txs.find((tx) => tx.contractAddress && tx.contractAddress !== "");
+        const deploymentTx = txs.find((tx) => 
+          tx.contractAddress && 
+          tx.contractAddress !== "" &&
+          // CRITICAL: Don't return the Safe's own address
+          tx.contractAddress.toLowerCase() !== safeAddress?.toLowerCase() &&
+          // OPTIONAL: Verify it came from the expected factory
+          (!expectedFactory || tx.from.toLowerCase() === expectedFactory.toLowerCase()) &&
+          // OPTIONAL: Ensure it's a CREATE operation (not a CALL)
+          (tx.type === "create" || tx.to === "" || tx.to === null)
+        );
         
         if (deploymentTx) {
           console.log("✅ Found deployed contract:", deploymentTx.contractAddress);
           return deploymentTx.contractAddress;
         }
-      } else {
-        console.error("txs is not an array:", txs);
       }
       
       await new Promise((resolve) => setTimeout(resolve, 3000));
       attempts++;
     }
 
-    console.error("❌ Could not extract deployed contract address after", maxAttempts, "attempts");
     throw new Error("Failed to extract deployed contract address");
   }
 

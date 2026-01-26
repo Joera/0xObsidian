@@ -26,18 +26,18 @@ export class AuthorModal extends Modal {
 		const name_input = containerDiv.createEl('input', { text: 'name' });
         name_input.setCssStyles({ "margin": "0rem 0rem 1.5rem 0", "width": "100%", "borderRadius": "4px", "padding": "6px 10px", "borderColor": "rgb(171, 171, 171)"});
         
-		containerDiv.createEl('label', { text: 'type:' });
+		// containerDiv.createEl('label', { text: 'type:' });
 		
-		const type_input = containerDiv.createEl('select');
-		type_input.setCssStyles({ "margin": "0rem 0rem 1.5rem 0", "width": "100%", "borderRadius": "4px", "padding": "6px 10px", "borderColor": "rgb(171, 171, 171)"});
+		// const type_input = containerDiv.createEl('select');
+		// type_input.setCssStyles({ "margin": "0rem 0rem 1.5rem 0", "width": "100%", "borderRadius": "4px", "padding": "6px 10px", "borderColor": "rgb(171, 171, 171)"});
 		
-		// Add options to the select
-		type_input.createEl('option', { text: 'Safe', value: 'safe' });
-		type_input.createEl('option', { text: 'WAAP', value: 'waap' });
+		// // Add options to the select
+		// type_input.createEl('option', { text: 'Safe', value: 'safe' });
+		// type_input.createEl('option', { text: 'WAAP', value: 'waap' });
 
 		const button = contentEl.createEl('button', { text: 'Create' });
         button.addEventListener('click', () => {
-            this.onSubmit(name_input.value, type_input.value)
+            this.onSubmit(name_input.value, "safe")
 			this.close()
         });
 	}

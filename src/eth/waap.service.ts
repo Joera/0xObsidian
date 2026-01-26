@@ -7,6 +7,7 @@ declare global {
     interface Window {
         waap: {
             login: () => Promise<'waap' | 'injected' | 'walletconnect' | null>;
+            request: (any) => Promise<any>;
         };
     }
 }
@@ -36,6 +37,7 @@ export interface IWaapService extends IBaseAccountService{
 //   isDeployed: () => Promise<boolean>;
 
     login: () => Promise<void>
+  
 }
 
 export class WaapService extends BaseAccountService implements IWaapService  {
@@ -60,11 +62,17 @@ export class WaapService extends BaseAccountService implements IWaapService  {
 
         const loginType = await window.waap.login();
 
+        console.log("hallo")
 
         switch (loginType) {
         case "waap":
             console.log("User chose WaaP");
-            // return await window.waap.getAddress(); // or however WaaP SDK exposes this
+
+            const accounts = await window.waap.request({ 
+                method: 'eth_requestAccounts' 
+            });
+
+            console.log(accounts)
         
             break;
         case "injected":
