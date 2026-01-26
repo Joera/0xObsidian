@@ -303,54 +303,69 @@ export class PermissionlessSafeService implements IPermissionlessSafeService {
 
   private async extractDeployedAddress(txHash: string): Promise<string> {
       console.log("🔍 [START] Extracting deployed address from tx:", txHash);
-      const result = await this.extractFromInternalTransactions(txHash);
+      const result = await this.extractFromInternalTransactions(txHash, this.address);
       console.log("✅ [END] Extracted address:", result, "for tx:", txHash);
       return result;
   }
 
-
-  private async extractFromInternalTransactions(
-    txHash: string, 
-    expectedFactory?: string,  // Add this parameter
-    safeAddress?: string       // Add this parameter
+// ALSO WORKS WHEN SAFE DEPLOYMENT IS PART OF TX AS ITS THR SAFES FIRST 
+ private async extractFromInternalTransactions(
+      txHash: string, 
+      safeAddress?: string
   ): Promise<string> {
-    console.log("🔄 Querying internal transactions...");
-    
-    let attempts = 0;
-    const maxAttempts = 9;
-    
-    while (attempts < maxAttempts) {
-      const response: any = await this.getInternalTransactions(
-        this.chainId,
-        txHash,
-        this.main.plugin.settings.etherscan_key
-      );
+      // console.log("🔄 Querying internal transactions...");
+      // console.log("🔍 Safe address to filter:", safeAddress);  // ✅ ADD THIS
+      // console.log("🔍 this.address:", this.address);           // ✅ ADD THIS
       
-      const txs = Array.isArray(response) ? response : response?.result || [];
+      let attempts = 0;
+      const maxAttempts = 16;
       
-      if (Array.isArray(txs)) {
-        const deploymentTx = txs.find((tx) => 
-          tx.contractAddress && 
-          tx.contractAddress !== "" &&
-          // CRITICAL: Don't return the Safe's own address
-          tx.contractAddress.toLowerCase() !== safeAddress?.toLowerCase() &&
-          // OPTIONAL: Verify it came from the expected factory
-          (!expectedFactory || tx.from.toLowerCase() === expectedFactory.toLowerCase()) &&
-          // OPTIONAL: Ensure it's a CREATE operation (not a CALL)
-          (tx.type === "create" || tx.to === "" || tx.to === null)
-        );
-        
-        if (deploymentTx) {
-          console.log("✅ Found deployed contract:", deploymentTx.contractAddress);
-          return deploymentTx.contractAddress;
-        }
+      while (attempts < maxAttempts) {
+          const response: any = await this.getInternalTransactions(
+              this.chainId,
+              txHash,
+              this.main.plugin.settings.etherscan_key
+          );
+          
+          const txs = Array.isArray(response) ? response : response?.result || [];
+          
+          if (Array.isArray(txs) && txs.length > 0) {
+              const deployedContracts = txs.filter(tx => 
+                  tx.contractAddress && tx.contractAddress !== ""
+              );
+              
+              console.log("📋 Deployed contracts:", deployedContracts.length);
+              deployedContracts.forEach(tx => {
+                  const isSafe = tx.contractAddress.toLowerCase() === safeAddress?.toLowerCase();
+                  // console.log("  -", tx.contractAddress, isSafe ? "← SAFE (filter)" : "← candidate");
+              });
+              
+              // ✅ If only ONE deployment, return it (even if it's the Safe)
+              if (deployedContracts.length === 1) {
+                  // console.log("✅ Single deployment:", deployedContracts[0].contractAddress);
+                  return deployedContracts[0].contractAddress;
+              }
+              
+              // ✅ If MULTIPLE deployments, filter out Safe and return the other
+              if (deployedContracts.length > 1) {
+                  const nonSafeDeployment = deployedContracts.find(tx => {
+                      const matches = tx.contractAddress.toLowerCase() === safeAddress?.toLowerCase();
+                      // console.log(`  🔍 Checking ${tx.contractAddress}: matches safe? ${matches}`);  // ✅ ADD THIS
+                      return !matches;  // Return ones that DON'T match
+                  });
+                  
+                  if (nonSafeDeployment) {
+                      // console.log("✅ Found non-Safe deployment:", nonSafeDeployment.contractAddress);
+                      return nonSafeDeployment.contractAddress;
+                  }
+              }
+          }
+          
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          attempts++;
       }
-      
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      attempts++;
-    }
 
-    throw new Error("Failed to extract deployed contract address");
+      throw new Error("Failed to extract deployed contract address");
   }
 
   async getInternalTransactions(

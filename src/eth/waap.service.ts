@@ -44,9 +44,7 @@ export class WaapService extends BaseAccountService implements IWaapService  {
 
     constructor(main: IMainController, chain: string) {
         super(main, chain); // Call parent constructor
-         this.initWaap();
-        
-
+        this.initWaap();
     }
 
    async initWaap() { 

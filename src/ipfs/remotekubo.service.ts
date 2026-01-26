@@ -254,7 +254,7 @@ export const add = async (
       request.write(formData);
       request.end();
     } catch (error) {
-      console.log(`ERROR: ${JSON.stringify(error)}`);
+      console.log(`ERROR: ${JSON.stringify(error)} -- ${note}`);
       reject();
     }
   });
