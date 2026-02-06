@@ -60,8 +60,6 @@ export class WaapService extends BaseAccountService implements IWaapService  {
 
         const loginType = await window.waap.login();
 
-        console.log("hallo")
-
         switch (loginType) {
         case "waap":
             console.log("User chose WaaP");

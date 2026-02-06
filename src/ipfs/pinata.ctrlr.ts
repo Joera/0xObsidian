@@ -59,7 +59,8 @@ export class PinataService {
     }
 
     try {
-      const blob = new Blob([fs.readFileSync(filePath)]);
+      const fileBuffer = fs.readFileSync(filePath);
+      const blob = new Blob([new Uint8Array(fileBuffer)]);
       const file = new File([blob], fileName, { type: contentType });
       const upload = await this.pinata.upload.file(file);
       return upload.IpfsHash;
