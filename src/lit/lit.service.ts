@@ -87,6 +87,8 @@ export class LitService {
             await this.init();
         }
 
+        console.log(unifiedAccessControlConditions)
+
         const { ciphertext, dataToEncryptHash } = await encryptString(
             {
                 unifiedAccessControlConditions,
